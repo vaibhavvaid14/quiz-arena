@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Timed multiple-choice quizzes with instant feedback, explanations and score history." />
+    <meta name="color-scheme" content="light dark" />
+    <title>Quiz Arena</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script>
+      // Apply the saved theme before first paint to avoid a light/dark flash.
+      try {
+        const prefs = JSON.parse(localStorage.getItem('quizapp:prefs'));
+        const theme = prefs && prefs.data && prefs.data.theme;
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch (e) {
+        /* storage unavailable: fall back to the OS setting */
+      }
+    </script>
+    <script type="module" src="js/main.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Skip to content</a>
+    <header class="site-header" id="site-header">
+      <div class="site-header-inner">
+        <a class="brand" href="./" data-nav="setup">
+          <span class="brand-mark" aria-hidden="true">🧠</span>
+          <span>Quiz Arena</span>
+        </a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="#setup" data-nav="setup">New quiz</a>
+          <a href="#history" data-nav="history">History</a>
+          <button type="button" class="icon-button" data-theme-toggle aria-pressed="false" aria-label="Switch to dark theme">
+            <span data-theme-icon aria-hidden="true">🌙</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+    <main id="app" class="app" tabindex="-1">
+      <noscript>Quiz Arena needs JavaScript enabled.</noscript>
+    </main>
+    <footer class="site-footer">
+      <p>Quiz Arena · your progress is stored only in this browser.</p>
+    </footer>
+  </body>
+</html>

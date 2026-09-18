@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quiz Arena — visual preview</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+  </head>
+  <body>
+    <!--
+      Design preview harness: drives the real app into a given state on an
+      in-memory store, for screenshots and visual QA.
+        ?screen=setup|quiz|feedback|results|history   &theme=light|dark
+    -->
+    <header class="site-header" id="site-header">
+      <div class="site-header-inner">
+        <a class="brand" href="#" data-nav="setup"><span class="brand-mark" aria-hidden="true">🧠</span><span>Quiz Arena</span></a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="#setup" data-nav="setup">New quiz</a>
+          <a href="#history" data-nav="history">History</a>
+          <button type="button" class="icon-button" data-theme-toggle aria-pressed="false"><span data-theme-icon aria-hidden="true">🌙</span></button>
+        </nav>
+      </div>
+    </header>
+    <main id="app" class="app" tabindex="-1"></main>
+    <script type="module">
+      import { createApp } from '../js/app.js';
+      import { answerCurrent, goToNext, timeoutCurrent } from '../js/core/quizEngine.js';
+      import { createQuestionBank } from '../js/core/questionBank.js';
+      import { createSeededRng } from '../js/core/random.js';
+      import { createMemoryBackend, createStorage } from '../js/core/storage.js';
+      import { QUESTIONS, TOPICS } from '../js/data/questions.js';
+
+      const params = new URLSearchParams(location.search);
+      const screen = params.get('screen') ?? 'setup';
+      const storage = createStorage(createMemoryBackend());
+      const theme = params.get('theme');
+      if (theme) storage.savePrefs({ theme });
+
+      const bank = createQuestionBank(TOPICS, QUESTIONS);
+      const app = createApp({ root: document.getElementById('app'), chrome: document.getElementById('site-header'), bank, storage, rng: createSeededRng(7) });
+      app.start();
+      const { ctx } = app;
+
+      /** Plays a whole quiz through the engine, answering correctly with probability `skill`. */
+      function playQuiz(config, skill, seed) {
+        const rng = createSeededRng(seed);
+        let session = ctx.startQuiz(config);
+        while (session.status === 'active') {
+          const item = session.items[session.currentIndex];
+          const q = bank.getQuestion(item.questionId);
+          const timing = { timeSpentMs: 4000 + rng() * 14000, remainingFraction: rng() };
+          const roll = rng();
+          session =
+            roll < 0.07 ? timeoutCurrent(session, timing)
+            : answerCurrent(session, bank, roll < skill ? q.answer : (q.answer + 1) % q.options.length, timing).session;
+          if (session.currentIndex === session.items.length - 1) break;
+          session = goToNext(session);
+        }
+        ctx.completeQuiz(session, 'completed');
+      }
+
+      const base = { playerName: 'Alex', topics: TOPICS.map((t) => t.id), difficulty: 'mixed', count: 10, timerMode: 'question', secondsPerQuestion: 30, shuffle: true };
+
+      if (screen === 'setup') {
+        playQuiz(base, 0.7, 3);
+        ctx.navigate('setup');
+      } else if (screen === 'quiz' || screen === 'feedback') {
+        ctx.startQuiz(base);
+        document.querySelector('.option').click(); // first question answered (feedback state)
+        document.querySelector('[data-action="next"]').click();
+        document.querySelector('.option').click();
+        document.querySelector('[data-action="next"]').click();
+        if (screen === 'feedback') {
+          const session = storage.getActiveSession();
+          const q = bank.getQuestion(session.items[session.currentIndex].questionId);
+          const wrong = [...document.querySelectorAll('.option')].find((b) => Number(b.dataset.original) !== q.answer);
+          wrong.click();
+        }
+      } else if (screen === 'results') {
+        playQuiz(base, 0.7, 11);
+      } else if (screen === 'history') {
+        playQuiz({ ...base, topics: ['javascript', 'web'] }, 0.8, 1);
+        playQuiz({ ...base, difficulty: 'hard', timerMode: 'session' }, 0.5, 2);
+        playQuiz({ ...base, topics: ['science', 'geography', 'math'], timerMode: 'off', count: 15 }, 0.65, 3);
+        ctx.navigate('history');
+      }
+      document.body.dataset.ready = 'true';
+    </script>
+  </body>
+</html>
