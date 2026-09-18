@@ -5,30 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Quiz Arena — tests</title>
     <link rel="stylesheet" href="../css/styles.css" />
-    <style>
-      .test-page { max-width: 920px; margin: 0 auto; padding: 24px 16px; }
-      #summary { font-weight: 700; margin: 12px 0; }
-      #results { list-style: none; padding: 0; font-family: var(--font-mono); font-size: 0.85rem; }
-      #results li { padding: 4px 0; border-bottom: 1px solid var(--grid); }
-      #results .pass { color: var(--good-ink); }
-      #results .fail { color: var(--critical-ink); }
-      .e2e-host { position: absolute; left: -10000px; width: 900px; }
-    </style>
+    <link rel="stylesheet" href="tests.css" />
+    <script type="module" src="run.js"></script>
   </head>
   <body>
+    <!-- Served only by `python serve.py --test`, which uses a throwaway database. -->
     <div class="test-page">
-      <h1>Quiz Arena — test suite</h1>
+      <h1>Quiz Arena — browser test suite</h1>
       <p id="summary">Running…</p>
       <ol id="results"></ol>
     </div>
-    <script type="module">
-      import { run } from './harness.js';
-      import './bank.test.js';
-      import './engine.test.js';
-      import './timer.test.js';
-      import './storage.test.js';
-      import './e2e.test.js';
-      run();
-    </script>
   </body>
 </html>

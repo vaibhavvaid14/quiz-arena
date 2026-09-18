@@ -1,8 +1,13 @@
 # Quiz Arena
 
-A timed multiple-choice quiz app with instant feedback, explanations, score
-analytics and saved history. Plain HTML, CSS and JavaScript (ES modules): no
-framework, no build step, no dependencies.
+A timed multiple-choice quiz app backed by a real database. Answers get
+instant feedback and explanations, and there are score analytics, per-player
+history and a shared leaderboard.
+
+- **Backend:** Python 3.10+ standard library only (`http.server` + `sqlite3`).
+  A JSON REST API with server-side scoring.
+- **Frontend:** plain HTML, CSS and JavaScript (ES modules). No build step.
+- **Nothing to install.** If Python runs, the app runs.
 
 ## Run it
 
@@ -10,107 +15,140 @@ framework, no build step, no dependencies.
 python serve.py --open        # or double-click start.bat on Windows
 ```
 
-Then open <http://127.0.0.1:8000/>. Any static server works. `serve.py` exists
-because browsers block ES modules over `file://`, and Python's stock server on
-Windows often sends `.js` files with the wrong MIME type.
+Then open <http://127.0.0.1:8000/>. On first start the server creates
+`data/quiz.db`, applies the schema and loads the 120 questions from
+`data/questions.json`. Every later start syncs any edits you've made to that
+file.
+
+| Option | Meaning |
+|---|---|
+| `--port 8000` | port to listen on |
+| `--db path/to/file.db` | use a different database file |
+| `--test` | throwaway database, and serves the browser tests at `/tests/` |
+| `--open` | open the browser |
 
 ## Test it
 
-With the server running, open <http://127.0.0.1:8000/tests/>. There are 44
-tests: engine, timer, storage, question-bank validation, analytics, and
-end-to-end flows that drive the real UI. The page title changes to
-`PASS n/n` or `FAIL n/n`, so it also works in a headless browser:
+```bash
+python -m unittest discover -s server/tests -t .     # 51 backend tests
+python serve.py --test                                # then open http://127.0.0.1:8000/tests/
+```
+
+**Backend tests.** They cover:
+- the schema and its constraints
+- seeding
+- every quiz rule, including timer expiry, using a fake clock
+- leaderboard ranking
+- the HTTP API itself: auth, error format, request limits, and static files
+  (including path traversal)
+
+**Browser tests (27).** They cover the API client, local storage, the timer,
+and end-to-end flows. The flows drive the real UI against the real server:
+play, resume, end early, keyboard play, name conflicts, countdown expiry, and
+what happens when the server is offline.
+
+The page title becomes `PASS n/n` or `FAIL n/n`, so it also works headless:
 
 ```bash
-chrome --headless=new --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8000/tests/
+chrome --headless=new --virtual-time-budget=90000 --dump-dom http://127.0.0.1:8000/tests/
 ```
 
-`tests/preview.html?screen=setup|quiz|feedback|results|history&theme=light|dark`
-puts the real app into any state with sample data, for visual checks.
+`tests/preview.html?screen=setup|quiz|feedback|results|history|leaderboard&theme=light|dark`
+seeds the test database through the API and opens that screen, for visual
+checks.
 
-## Features
-
-- **Setup:** player name, topics (6 × 12 questions), difficulty
-  (mixed/easy/medium/hard), length, timer mode, shuffle and negative marking.
-  The last setup is remembered.
-- **Quiz:** a question card with instant green/red feedback and an
-  explanation, a live ring timer, running points, streak counter, a progress
-  bar, and keyboard play (`1`–`4`/`A`–`D` to answer, `→`/`N` for next).
-- **Timer modes**
-  - *Per question:* when time runs out the question counts as timed out and
-    the correct answer is shown. Fast answers earn up to 50% bonus points.
-  - *Whole quiz:* one countdown. At zero the quiz is submitted automatically.
-  - *Off:* untimed. Time is still recorded.
-- **Results:** score ring, grade, stat tiles, accuracy by topic and by
-  difficulty, and a filterable review of every question. Actions: retake,
-  retry only the missed questions, or start a new quiz.
-- **History:** lifetime stats, topic mastery across attempts, and a log of
-  past attempts; each one can be reopened for review.
-- **Persistence:** an unfinished quiz is saved after every answer and when the
-  tab is hidden. It survives a reload and can be resumed. Storage is
-  versioned, and corrupt or blocked storage falls back safely.
-- **Accessibility:** keyboard play, focus moves to each new question, live
-  announcements, status shown with icon and label (never by colour alone),
-  reduced-motion support, and light/dark themes (follows the OS, with a
-  manual toggle).
-
-## Architecture
+## How it works
 
 ```
-index.html              page shell (header, <main id="app">)
-css/styles.css          design tokens (light + dark) and all styles
-js/main.js              entry: validate bank -> pick storage -> mount app
-js/app.js               controller: screen routing, start/complete quiz, theme
-js/core/                framework-free logic, unit-tested
-  config.js             every tunable number (points, bonus, limits)
-  quizEngine.js         session state machine, scoring, results summary
-  timer.js              drift-free countdown/stopwatch (injectable clock)
-  storage.js            versioned localStorage repository with fallback
-  questionBank.js       schema validation, indexing, filtering
-  stats.js              history entries and cross-attempt analytics
-  random.js             seeded RNG + Fisher–Yates shuffle
-js/ui/                  DOM layer
-  dom.js                safe element builder (text only, never innerHTML)
-  components.js         timer ring, score ring, bars, tiles, pills
-  dialog.js             accessible confirm dialog (<dialog>)
-  screens/              setup, quiz, results, history
-js/data/questions.js    the question bank
-tests/                  in-browser test runner + suites + preview harness
+Browser (js/)                         Server (server/)                 SQLite (data/quiz.db)
+─────────────                         ────────────────                 ─────────────────────
+screens ── api.js ── fetch JSON ──►  app.py   routing, errors,  ──►   topics, questions,
+timer (display only)                           static files             question_options,
+storage (player key,                  service.py  quiz rules            players, attempts,
+  resume id, prefs)                   rules.py    scoring constants     attempt_questions
+                                      seed.py     questions.json → DB
+                                      db.py       connections, migrations
 ```
 
-**Design choices**
+**The server is in charge.** A quiz app that ships its answer key to the
+browser can be beaten with devtools, so this one doesn't:
 
-- The engine is **pure and immutable**. A session is a plain JSON object, and
-  every action (`answerCurrent`, `timeoutCurrent`, `goToNext`,
-  `finishSession`) returns a new one. That makes saving and resuming trivial
-  and the logic testable without a DOM.
-- **Time is measured, not counted.** The timer derives elapsed time from
-  `performance.now()`, so throttled background tabs can't slow it down. Timers
-  pause while feedback is shown, so reading an explanation costs nothing.
-- **Dependencies are injected.** The app takes its storage, RNG and clock as
-  arguments, so tests mount the whole UI on in-memory storage with a seeded
-  RNG.
-- **Safe rendering.** All content goes through text nodes, so a question like
-  "What does `<section>` mean?" can never inject markup.
+- **Answers stay secret until you answer.** The browser gets options without
+  answers. The correct option and the explanation arrive only once that
+  question is settled.
+- **Server clock only.** Time is measured by the server, minus a 300 ms
+  allowance for network delay, so the browser can't claim it answered faster
+  than it did.
+- **Closing the tab doesn't stop the clock.** Every request first settles any
+  clock that ran out ("lazy expiry"). A tab closed mid-quiz still times out,
+  and a whole-quiz countdown still submits the quiz.
+- **Reading explanations is free.** A question's clock stops when you answer
+  and the next one starts only when you ask for it.
+- **Double-clicks and retries are harmless.** Answering twice or clicking
+  "next" twice returns the current state instead of erroring. A stale tab gets
+  a 409 and reloads the real state.
 
-## Question schema
+**Players.** There are no passwords. Using a name for the first time claims
+it and returns a secret key, which the server stores only as a SHA-256 hash.
+The browser keeps the key and sends it as `X-Player-Key`. Another browser
+can't use that name, and attempts are private to their owner.
 
-```js
+**Database design** ([server/schema.sql](server/schema.sql)):
+
+- **Answer options are rows**, not a JSON list. A partial unique index
+  guarantees at most one correct option per question.
+- **History can't be rewritten.** `attempt_questions.selected_option_id` is a
+  foreign key with `ON DELETE RESTRICT`, so an option someone chose can never
+  disappear. The seeder also refuses to change the options of a question that
+  has already been played.
+- **Questions are never deleted.** Removing one from the JSON deactivates it,
+  so old attempts stay reviewable.
+- **Finished attempts store their score summary**, so history and the
+  leaderboard are single indexed queries. The leaderboard uses window
+  functions (`ROW_NUMBER() OVER (PARTITION BY player …)`).
+- **Engine settings:** foreign keys on, WAL journal, `BEGIN IMMEDIATE` write
+  transactions, and schema versioning with `PRAGMA user_version`.
+
+## API
+
+All responses are JSON. Errors look like `{"error": {"code", "message"}}`.
+Routes marked 🔑 need the `X-Player-Key` header.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/catalog` | topics with question counts, plus scoring rules |
+| POST | `/api/players` | claim a name → `{id, name, key}` (409 if taken) |
+| GET | `/api/me` 🔑 | who this key belongs to |
+| GET / DELETE | `/api/me/history` 🔑 | stats, topic mastery, attempts / clear them |
+| POST | `/api/attempts` 🔑 | start a quiz (optional `questionIds` for "retry missed") |
+| GET / DELETE | `/api/attempts/{id}` 🔑 | current state / discard an unfinished quiz |
+| POST | `/api/attempts/{id}/answer` 🔑 | `{position, optionId}`; `optionId: null` = timed out |
+| POST | `/api/attempts/{id}/next` 🔑 | `{position}` |
+| POST | `/api/attempts/{id}/finish` 🔑 | end now (time-up or quit, decided by the server) |
+| GET | `/api/attempts/{id}/results` 🔑 | summary and full review |
+| GET | `/api/leaderboard?limit=20` | top players (a valid key also returns your own rank) |
+
+## Adding questions
+
+Edit `data/questions.json`, then restart the server or run
+`python -m server.seed`. Each question looks like this:
+
+```json
 {
-  id: 'js-h01',                 // unique
-  topic: 'javascript',          // must match a TOPICS id
-  difficulty: 'hard',           // 'easy' | 'medium' | 'hard'
-  question: 'What does this log?',
-  code: 'console.log(1)',       // optional snippet shown under the question
-  options: ['A', 'B', 'C', 'D'],// 2–6 unique strings
-  answer: 2,                    // index into options
-  explanation: 'Why the answer is right.',
+  "id": "js-h07",
+  "topic": "javascript",
+  "difficulty": "hard",
+  "question": "What does this log?",
+  "code": "console.log(typeof null)",
+  "options": ["\"null\"", "\"object\"", "\"undefined\"", "\"number\""],
+  "answer": 1,
+  "explanation": "A legacy quirk: typeof null is \"object\"."
 }
 ```
 
-To add questions or topics, edit `js/data/questions.js`. The bank is
-validated at startup: invalid entries are skipped and logged in the console,
-and the `bank:` tests fail until they're fixed.
+The whole file is validated before anything is written, and one bad question
+rejects the sync. To change the options of a question people have already
+played, give it a new id; the old one is retired automatically.
 
 ## Scoring
 
@@ -121,10 +159,20 @@ and the `bank:` tests fail until they're fixed.
 | Wrong answer | 0, or −25% of base with negative marking (total never below 0) |
 | Timed out / skipped | 0 |
 
-The percentage score is correct answers ÷ total questions. Grades: A ≥ 90,
-B ≥ 75, C ≥ 60, D ≥ 40, F below that.
+The percentage score is correct answers ÷ questions. Grades: A ≥ 90, B ≥ 75,
+C ≥ 60, D ≥ 40, F below.
 
-## Browser support
+The **leaderboard** shows each player's single best finished quiz of at least
+5 questions, ranked by points. Quizzes ended early and "retry missed" runs
+don't count.
 
-Tested in Chrome. The app uses ES modules, `<dialog>`, CSS `:has()` and
-`color-mix()`, all of which current Chrome, Edge, Firefox and Safari support.
+## Known limits
+
+- **Names aren't password-protected.** A name belongs to the browser that
+  claimed it; clearing site data loses access to it. Real accounts would need
+  sign-in (see the suggestions in the project notes).
+- **Single machine only.** SQLite with one server process suits a class or a
+  team. For many simultaneous users, move to PostgreSQL behind a production
+  WSGI server.
+- **Tested in Chrome.** The app uses ES modules, `<dialog>`, CSS `:has()` and
+  `color-mix()`, all supported by current Chrome, Edge, Firefox and Safari.

@@ -3,3 +3,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# SQLite database (created on first run; rebuilt from data/questions.json)
+data/*.db
+data/*.db-wal
+data/*.db-shm

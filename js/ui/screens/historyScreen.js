@@ -1,28 +1,33 @@
 /**
- * History screen: lifetime stats, topic mastery and a log of past attempts
- * (each can be reopened for a full review).
+ * History screen: the current player's lifetime stats, topic mastery and past
+ * attempts (each can be reopened for a full review). Data: GET /api/me/history.
  */
 
-import { DIFFICULTY_META, TIMER_MODES } from '../../core/config.js';
-import { aggregateHistory, sessionFromHistoryEntry } from '../../core/stats.js';
-import { accuracyBars, emptyState, statTile } from '../components.js';
+import { DIFFICULTY_LABELS, TIMER_MODES } from '../../core/config.js';
+import { accuracyBars, emptyState, loadingState, statTile } from '../components.js';
 import { confirmDialog } from '../dialog.js';
 import { formatClock, formatDate, formatDuration, h } from '../dom.js';
 
 export function renderHistoryScreen(root, ctx) {
-  const { bank, storage } = ctx;
+  const { api } = ctx;
   const screen = h('section', { class: 'screen screen-history' });
   root.append(screen);
+  let alive = true;
 
-  function render() {
-    const history = storage.getHistory();
-    const stats = aggregateHistory(history, bank.topics);
+  const playNow = () => h('button', { type: 'button', class: 'btn btn-primary', onClick: () => ctx.navigate('setup') }, 'Start a quiz');
 
-    const header = h(
+  function header(history) {
+    const count = history?.stats.attempts ?? 0;
+    return h(
       'header',
       { class: 'screen-header screen-header-row' },
-      h('div', {}, h('h1', {}, 'Your history'), h('p', { class: 'lede' }, 'Every finished quiz is saved on this device.')),
-      history.length > 0
+      h(
+        'div',
+        {},
+        h('h1', {}, history ? `${history.player.name}'s history` : 'Your history'),
+        h('p', { class: 'lede' }, 'Every finished quiz is saved in the quiz database.'),
+      ),
+      count > 0
         ? h(
             'button',
             {
@@ -31,30 +36,54 @@ export function renderHistoryScreen(root, ctx) {
               onClick: async () => {
                 const ok = await confirmDialog({
                   title: 'Clear all history?',
-                  message: `This permanently deletes ${history.length} saved attempt${history.length === 1 ? '' : 's'} from this device.`,
+                  message: `This permanently deletes ${count} saved attempt${count === 1 ? '' : 's'}, including their leaderboard scores.`,
                   confirmText: 'Clear history',
                   danger: true,
                 });
                 if (!ok) return;
-                storage.clearHistory();
-                render();
-                ctx.announce('History cleared.');
+                try {
+                  await api.clearHistory();
+                  ctx.announce('History cleared.');
+                  load();
+                } catch (error) {
+                  ctx.handleError(error);
+                }
               },
             },
             'Clear history',
           )
         : null,
     );
+  }
 
-    if (history.length === 0) {
+  async function load() {
+    if (!ctx.player) {
       screen.replaceChildren(
-        header,
-        emptyState({
-          icon: '📭',
-          title: 'No quizzes yet',
-          message: 'Finish a quiz and your scores, streaks and topic mastery will show up here.',
-          action: h('button', { type: 'button', class: 'btn btn-primary', onClick: () => ctx.navigate('setup') }, 'Start a quiz'),
-        }),
+        header(null),
+        emptyState({ icon: '👋', title: 'Who is playing?', message: 'Enter your name on the setup screen and finish a quiz to build your history.', action: playNow() }),
+      );
+      return;
+    }
+    screen.replaceChildren(header(null), loadingState('Loading your history…'));
+    let history;
+    try {
+      history = await api.history();
+    } catch (error) {
+      if (!alive) return;
+      if (error.status === 401) return ctx.handleError(error);
+      screen.replaceChildren(header(null), emptyState({ icon: '⚠️', title: "Couldn't load your history", message: error.message, action: null }));
+      return;
+    }
+    if (!alive) return;
+    render(history);
+  }
+
+  function render(history) {
+    const { stats } = history;
+    if (stats.attempts === 0) {
+      screen.replaceChildren(
+        header(history),
+        emptyState({ icon: '📭', title: 'No quizzes yet', message: 'Finish a quiz and your scores, streaks and topic mastery will show up here.', action: playNow() }),
       );
       return;
     }
@@ -72,32 +101,31 @@ export function renderHistoryScreen(root, ctx) {
       'section',
       { class: 'card' },
       h('h2', { class: 'card-title' }, 'Topic mastery'),
-      accuracyBars(
-        stats.byTopic.map((row) => ({ ...row, prefix: bank.getTopic(row.key)?.icon })),
-        { caption: 'Share of questions answered correctly, across all attempts' },
-      ),
+      accuracyBars(history.byTopic.map((row) => ({ ...row, prefix: row.icon })), {
+        caption: 'Share of questions answered correctly, across all attempts',
+      }),
     );
 
-    const rows = history.map((entry) => {
-      const s = entry.summary;
-      const topicNames = entry.config.topics.map((id) => bank.getTopic(id)?.name ?? id);
-      const topicsLabel = topicNames.length === bank.topics.length ? 'All topics' : topicNames.join(', ');
-      const difficulty = entry.config.difficulty === 'mixed' ? 'Mixed' : DIFFICULTY_META[entry.config.difficulty]?.label;
+    const allTopics = ctx.catalog.topics.length;
+    const rows = history.attempts.map((attempt) => {
+      const { config } = attempt;
+      const topicNames = config.topics.map((id) => ctx.getTopic(id)?.name ?? id);
+      const topicsLabel = config.isRetry ? 'Retry of missed questions' : topicNames.length === allTopics ? 'All topics' : topicNames.join(', ');
       const timer =
-        entry.config.timerMode === TIMER_MODES.OFF
+        config.timerMode === TIMER_MODES.OFF
           ? 'Untimed'
-          : entry.config.timerMode === TIMER_MODES.QUESTION
-            ? `${entry.config.secondsPerQuestion}s per question`
-            : `${formatClock(entry.config.secondsPerQuestion * s.total * 1000)} total`;
+          : config.timerMode === TIMER_MODES.QUESTION
+            ? `${config.secondsPerQuestion}s per question`
+            : `${formatClock(config.secondsPerQuestion * attempt.total * 1000)} total`;
       return h(
         'tr',
         {},
-        h('td', {}, formatDate(entry.finishedAt), entry.playerName ? h('span', { class: 'cell-sub' }, entry.playerName) : null),
-        h('td', {}, topicsLabel, h('span', { class: 'cell-sub' }, `${difficulty} · ${timer}`)),
-        h('td', { class: 'num' }, `${s.correct}/${s.total}`),
-        h('td', { class: 'num' }, h('strong', {}, `${s.percentage}%`), h('span', { class: 'cell-sub' }, `Grade ${s.grade}`)),
-        h('td', { class: 'num' }, String(s.points)),
-        h('td', { class: 'num' }, formatDuration(s.durationMs)),
+        h('td', {}, formatDate(attempt.finishedAt)),
+        h('td', {}, topicsLabel, h('span', { class: 'cell-sub' }, `${DIFFICULTY_LABELS[config.difficulty]} · ${timer}`)),
+        h('td', { class: 'num' }, `${attempt.correct}/${attempt.total}`),
+        h('td', { class: 'num' }, h('strong', {}, `${attempt.percentage}%`), h('span', { class: 'cell-sub' }, `Grade ${attempt.grade}`)),
+        h('td', { class: 'num' }, String(attempt.points)),
+        h('td', { class: 'num' }, formatDuration(attempt.durationMs)),
         h(
           'td',
           {},
@@ -106,8 +134,8 @@ export function renderHistoryScreen(root, ctx) {
             {
               type: 'button',
               class: 'btn btn-small btn-ghost',
-              attrs: { 'aria-label': `Review quiz from ${formatDate(entry.finishedAt)}` },
-              onClick: () => ctx.navigate('results', { session: sessionFromHistoryEntry(entry) }),
+              attrs: { 'aria-label': `Review quiz from ${formatDate(attempt.finishedAt)}` },
+              onClick: () => ctx.navigate('results', { attemptId: attempt.id }),
             },
             'Review',
           ),
@@ -124,7 +152,7 @@ export function renderHistoryScreen(root, ctx) {
         { class: 'table-scroll', attrs: { tabindex: '0', role: 'region', 'aria-label': 'Past attempts table' } },
         h(
           'table',
-          { class: 'history-table' },
+          { class: 'data-table' },
           h(
             'thead',
             {},
@@ -141,9 +169,11 @@ export function renderHistoryScreen(root, ctx) {
       ),
     );
 
-    screen.replaceChildren(header, tiles, mastery, table);
+    screen.replaceChildren(header(history), tiles, mastery, table);
   }
 
-  render();
-  return null;
+  load();
+  return () => {
+    alive = false;
+  };
 }

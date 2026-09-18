@@ -1445,33 +1445,33 @@ fieldset.card {
   clear: both;
   border-radius: var(--radius-sm);
 }
-.history-table {
+.data-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
-.history-table th,
-.history-table td {
+.data-table th,
+.data-table td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--grid);
   text-align: left;
   vertical-align: top;
 }
-.history-table th {
+.data-table th {
   color: var(--ink-muted);
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
 }
-.history-table .num {
+.data-table .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.history-table tbody tr:hover {
+.data-table tbody tr:hover {
   background: var(--surface-sunken);
 }
-.history-table td:first-child {
+.data-table td:first-child {
   white-space: nowrap;
 }
 .cell-sub {
@@ -1496,6 +1496,81 @@ fieldset.card {
 .empty-state p {
   max-width: 420px;
   color: var(--ink-2);
+}
+
+/* ------------------------------------------------------ loading & status */
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 4px;
+  color: var(--ink-2);
+}
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid var(--surface-sunken);
+  border-top-color: var(--series);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.screen-status .empty-state {
+  margin-top: 8vh;
+}
+
+/* The chosen option while the server checks it. */
+.option.is-pending {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  opacity: 1;
+}
+.option.is-pending .option-mark::after {
+  content: 'Checking…';
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------ leaderboard */
+
+.leaderboard-table .rank {
+  width: 56px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.leaderboard-table tr.is-me {
+  background: var(--accent-wash);
+}
+.leaderboard-table tr.is-me:hover {
+  background: var(--accent-wash);
+}
+.your-rank {
+  padding: 12px 16px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-wash);
+  color: var(--ink-2);
+}
+.your-rank strong {
+  color: var(--ink);
+}
+.you-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: 1px;
 }
 
 /* ---------------------------------------------------------------- dialog */
@@ -1603,6 +1678,21 @@ fieldset.card {
   }
   .bar-row {
     grid-template-columns: minmax(80px, 42%) 1fr;
+  }
+  /* Tables keep their essential columns on phones: rank/player/points/score
+     on the leaderboard; date/quiz/score/review in history. */
+  .leaderboard-table th:nth-child(n + 5),
+  .leaderboard-table td:nth-child(n + 5),
+  .data-table:not(.leaderboard-table) th:nth-child(3),
+  .data-table:not(.leaderboard-table) td:nth-child(3),
+  .data-table:not(.leaderboard-table) th:nth-child(5),
+  .data-table:not(.leaderboard-table) td:nth-child(5),
+  .data-table:not(.leaderboard-table) th:nth-child(6),
+  .data-table:not(.leaderboard-table) td:nth-child(6) {
+    display: none;
+  }
+  .data-table td:first-child {
+    white-space: normal;
   }
 }
 

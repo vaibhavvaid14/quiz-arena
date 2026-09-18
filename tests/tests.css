@@ -1,0 +1,31 @@
+.test-page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+#summary {
+  margin: 12px 0;
+  font-weight: 700;
+}
+#results {
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  list-style: none;
+}
+#results li {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--grid);
+}
+#results .pass {
+  color: var(--good-ink);
+}
+#results .fail {
+  color: var(--critical-ink);
+}
+/* End-to-end tests mount the real app off-screen. */
+.e2e-host {
+  position: absolute;
+  left: -10000px;
+  width: 900px;
+}

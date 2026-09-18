@@ -1,16 +1,16 @@
 /**
  * Results screen: score hero, stat tiles, topic/difficulty breakdown and a full
- * question-by-question review, plus retake actions.
+ * question-by-question review, plus retake actions. Data comes from
+ * GET /api/attempts/{id}/results (scored by the server).
  */
 
-import { END_REASONS, ITEM_STATUS, summarizeSession } from '../../core/quizEngine.js';
-import { accuracyBars, chip, difficultyChip, scoreRing, statTile, statusPill } from '../components.js';
-import { confirmDialog } from '../dialog.js';
+import { END_REASONS, ITEM_STATUS } from '../../core/config.js';
+import { accuracyBars, chip, difficultyChip, emptyState, loadingState, scoreRing, statTile, statusPill } from '../components.js';
 import { formatDate, formatDuration, h } from '../dom.js';
 
 const END_REASON_NOTES = {
   [END_REASONS.TIME_UP]: "Time ran out, so the quiz was submitted automatically. Questions you didn't reach are marked as skipped.",
-  [END_REASONS.QUIT]: 'You ended this quiz early. Unanswered questions are marked as skipped.',
+  [END_REASONS.QUIT]: 'You ended this quiz early. Unanswered questions are marked as skipped, and it does not count for the leaderboard.',
 };
 
 const REVIEW_FILTERS = [
@@ -19,16 +19,39 @@ const REVIEW_FILTERS = [
   { value: 'correct', label: 'Correct' },
 ];
 
-export function renderResultsScreen(root, ctx, { session, fresh = false }) {
-  const { bank, storage } = ctx;
-  const summary = summarizeSession(session, bank);
-  const name = session.config.playerName;
+export function renderResultsScreen(root, ctx, { attemptId, fresh = false }) {
+  const screen = h('section', { class: 'screen screen-results' }, loadingState('Loading your results…'));
+  root.append(screen);
+  let alive = true;
+
+  ctx.api
+    .results(attemptId)
+    .then((summary) => {
+      if (!alive) return;
+      screen.replaceChildren(...buildResults(summary, ctx, fresh));
+      if (fresh) ctx.announce(`Quiz complete. You scored ${summary.percentage} percent, grade ${summary.grade.grade}.`);
+    })
+    .catch((error) => {
+      if (!alive) return;
+      screen.replaceChildren(
+        emptyState({
+          icon: '⚠️',
+          title: "Couldn't load these results",
+          message: error.message,
+          action: h('button', { type: 'button', class: 'btn btn-primary', onClick: () => ctx.navigate('history') }, 'Back to history'),
+        }),
+      );
+    });
+
+  return () => {
+    alive = false;
+  };
+}
+
+function buildResults(summary, ctx, fresh) {
+  const name = ctx.player?.name;
 
   /* ---------- hero ---------- */
-
-  const headline = fresh
-    ? `${summary.grade.label}${name ? `, ${name}` : ''}!`
-    : `Quiz review${name ? ` — ${name}` : ''}`;
 
   const hero = h(
     'header',
@@ -37,17 +60,55 @@ export function renderResultsScreen(root, ctx, { session, fresh = false }) {
     h(
       'div',
       { class: 'results-hero-text' },
-      h('p', { class: 'eyebrow' }, fresh ? 'Quiz complete' : formatDate(session.finishedAt)),
-      h('h1', {}, headline),
+      h('p', { class: 'eyebrow' }, fresh ? 'Quiz complete' : formatDate(summary.finishedAt)),
+      h('h1', {}, fresh ? `${summary.grade.label}${name ? `, ${name}` : ''}!` : 'Quiz review'),
       h(
         'p',
         { class: 'results-line' },
-        h('span', { class: ['grade-badge', `grade-${summary.grade.grade.toLowerCase()}`] }, `Grade ${summary.grade.grade}`),
+        h('span', { class: 'grade-badge' }, `Grade ${summary.grade.grade}`),
         h('span', {}, `${summary.correct} of ${summary.total} correct`),
         h('span', {}, `${summary.points} / ${summary.maxPoints} pts`),
       ),
       END_REASON_NOTES[summary.endReason] ? h('p', { class: 'notice' }, END_REASON_NOTES[summary.endReason]) : null,
     ),
+  );
+
+  /* ---------- actions ---------- */
+
+  const { isRetry, ...config } = summary.config;
+  const missed = summary.missedQuestionIds;
+  let starting = false;
+
+  async function start(quizConfig, options) {
+    if (starting) return;
+    starting = true;
+    try {
+      await ctx.startQuiz(quizConfig, options);
+    } catch (error) {
+      ctx.handleError(error);
+    } finally {
+      starting = false;
+    }
+  }
+
+  const actions = h(
+    'div',
+    { class: 'results-actions' },
+    h('button', { type: 'button', class: 'btn btn-primary', dataset: { action: 'retake' }, onClick: () => start(config) }, '↻ Retake quiz'),
+    missed.length > 0
+      ? h(
+          'button',
+          {
+            type: 'button',
+            class: 'btn btn-secondary',
+            dataset: { action: 'retry-missed' },
+            onClick: () => start({ ...config, count: missed.length }, { questionIds: missed }),
+          },
+          `Retry ${missed.length} missed`,
+        )
+      : null,
+    h('button', { type: 'button', class: 'btn btn-ghost', onClick: () => ctx.navigate('setup') }, 'New quiz'),
+    h('button', { type: 'button', class: 'btn btn-ghost', onClick: () => ctx.navigate('leaderboard') }, 'Leaderboard'),
   );
 
   /* ---------- stat tiles ---------- */
@@ -72,17 +133,14 @@ export function renderResultsScreen(root, ctx, { session, fresh = false }) {
     h(
       'div',
       { class: 'breakdown-grid' },
-      accuracyBars(
-        summary.byTopic.map((row) => ({ ...row, prefix: bank.getTopic(row.key)?.icon })),
-        { caption: 'Accuracy by topic' },
-      ),
+      accuracyBars(summary.byTopic.map((row) => ({ ...row, prefix: row.icon })), { caption: 'Accuracy by topic' }),
       accuracyBars(summary.byDifficulty, { caption: 'Accuracy by difficulty' }),
     ),
   );
 
   /* ---------- review ---------- */
 
-  const reviewCards = summary.review.map((entry) => reviewCard(entry, bank));
+  const reviewCards = summary.review.map((entry) => reviewCard(entry, ctx));
   const reviewList = h('ol', { class: 'review-list' }, reviewCards.map(({ el }) => el));
   const reviewEmpty = h('p', { class: 'hint review-empty', hidden: true });
 
@@ -118,54 +176,11 @@ export function renderResultsScreen(root, ctx, { session, fresh = false }) {
     reviewEmpty,
   );
 
-  /* ---------- actions ---------- */
-
-  const missed = summary.missedQuestionIds;
-
-  async function startGuarded(config, options) {
-    if (storage.getActiveSession()) {
-      const ok = await confirmDialog({
-        title: 'Start a new quiz?',
-        message: 'You have an unfinished quiz. Starting a new one will discard it.',
-        confirmText: 'Start new quiz',
-        danger: true,
-      });
-      if (!ok) return;
-    }
-    ctx.startQuiz(config, options);
-  }
-
-  const actions = h(
-    'div',
-    { class: 'results-actions' },
-    h(
-      'button',
-      { type: 'button', class: 'btn btn-primary', dataset: { action: 'retake' }, onClick: () => startGuarded(session.config) },
-      '↻ Retake quiz',
-    ),
-    missed.length > 0
-      ? h(
-          'button',
-          {
-            type: 'button',
-            class: 'btn btn-secondary',
-            dataset: { action: 'retry-missed' },
-            onClick: () => startGuarded({ ...session.config, count: missed.length }, { questionIds: missed }),
-          },
-          `Retry ${missed.length} missed`,
-        )
-      : null,
-    h('button', { type: 'button', class: 'btn btn-ghost', onClick: () => ctx.navigate('setup') }, 'New quiz'),
-    h('button', { type: 'button', class: 'btn btn-ghost', onClick: () => ctx.navigate('history') }, 'History'),
-  );
-
-  root.append(h('section', { class: 'screen screen-results' }, hero, actions, tiles, breakdown, review));
-  if (fresh) ctx.announce(`Quiz complete. You scored ${summary.percentage} percent, grade ${summary.grade.grade}.`);
-  return null;
+  return [hero, actions, tiles, breakdown, review];
 }
 
-function reviewCard(entry, bank) {
-  const topic = bank.getTopic(entry.topic);
+function reviewCard(entry, ctx) {
+  const topic = ctx.getTopic(entry.topic);
   const el = h(
     'li',
     { class: ['card', 'review-card', `status-${entry.status}`] },
@@ -194,11 +209,7 @@ function reviewCard(entry, bank) {
       ),
     ),
     h('p', { class: 'review-explanation' }, h('strong', {}, 'Why: '), entry.explanation),
-    h(
-      'p',
-      { class: 'review-meta' },
-      `${formatDuration(entry.timeSpentMs)} · ${entry.points > 0 ? '+' : ''}${entry.points} pts`,
-    ),
+    h('p', { class: 'review-meta' }, `${formatDuration(entry.timeSpentMs)} · ${entry.points > 0 ? '+' : ''}${entry.points} pts`),
   );
   return { el, status: entry.status };
 }

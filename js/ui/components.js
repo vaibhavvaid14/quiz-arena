@@ -2,8 +2,7 @@
  * Reusable presentational components (pure DOM factories).
  */
 
-import { DIFFICULTY_META, TIMER_DANGER_FRACTION, TIMER_WARNING_FRACTION } from '../core/config.js';
-import { ITEM_STATUS } from '../core/quizEngine.js';
+import { DIFFICULTY_LABELS, ITEM_STATUS, TIMER_DANGER_FRACTION, TIMER_WARNING_FRACTION } from '../core/config.js';
 import { formatClock, h, svg } from './dom.js';
 
 /** Status is never conveyed by colour alone: every status has an icon and a label. */
@@ -30,7 +29,7 @@ export function chip(text, extraClass = '') {
 }
 
 export function difficultyChip(difficulty) {
-  return chip(DIFFICULTY_META[difficulty]?.label ?? difficulty, `chip-${difficulty}`);
+  return chip(DIFFICULTY_LABELS[difficulty] ?? difficulty, `chip-${difficulty}`);
 }
 
 export function statTile({ label, value, detail = null }) {
@@ -142,6 +141,11 @@ export function accuracyBars(rows, { caption }) {
       ),
     ),
   );
+}
+
+/** Placeholder shown while a screen's data loads. */
+export function loadingState(message = 'Loading…') {
+  return h('p', { class: 'loading', attrs: { role: 'status' } }, h('span', { class: 'spinner', attrs: { 'aria-hidden': 'true' } }), message);
 }
 
 export function emptyState({ icon, title, message, action = null }) {

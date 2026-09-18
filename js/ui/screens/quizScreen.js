@@ -1,31 +1,19 @@
 /**
- * Active quiz screen: question card, option selection with instant feedback,
- * live timer(s), running score, keyboard shortcuts and auto-save.
+ * Active quiz screen, driven entirely by server state.
  *
- * Timing rules
- *  - Per-question mode: when the countdown hits zero the question is recorded as
- *    "timed out" (0 points) and the correct answer is revealed.
- *  - Whole-quiz mode: when the countdown hits zero the quiz is auto-submitted;
- *    the current and remaining questions count as timed out / skipped.
- *  - Timers pause while feedback is shown (the question is already locked), so
- *    reading explanations never costs time.
+ * The browser never knows the correct answer in advance: it shows the options,
+ * sends the choice, and renders whatever the server returns (correct option,
+ * explanation, points). Every action (answer / time-up / next / end) is one API
+ * call that returns the complete new state.
+ *
+ * The local Timer only drives the on-screen countdown; the server measures time
+ * with its own clock and has the final say.
+ *  - Per-question mode: at zero we report a time-out; the correct answer is revealed.
+ *  - Whole-quiz mode: at zero we ask the server to finish the quiz.
+ *  - Timers stop while feedback is shown (the server doesn't charge that time either).
  */
 
-import { TIMER_MODES } from '../../core/config.js';
-import {
-  END_REASONS,
-  ITEM_STATUS,
-  answerCurrent,
-  getCurrentItem,
-  getLiveStats,
-  getQuestionTimeLimitMs,
-  getSessionTimeLimitMs,
-  goToNext,
-  isItemAnswered,
-  isLastQuestion,
-  timeoutCurrent,
-  withClock,
-} from '../../core/quizEngine.js';
+import { ITEM_STATUS, TIMER_MODES } from '../../core/config.js';
 import { Timer } from '../../core/timer.js';
 import { chip, difficultyChip, timerRing } from '../components.js';
 import { confirmDialog } from '../dialog.js';
@@ -34,16 +22,22 @@ import { focusElement, formatClock, h } from '../dom.js';
 const OPTION_KEYS = ['a', 'b', 'c', 'd', 'e', 'f'];
 const LOW_TIME_ANNOUNCE_MS = 5000;
 
-export function renderQuizScreen(root, ctx, { session: initialSession }) {
-  const { bank, storage } = ctx;
-  let session = initialSession;
-  let completed = false;
-  let mounted = true; // false once navigated away; deferred timer callbacks check it
+const FEEDBACK = {
+  [ITEM_STATUS.CORRECT]: { icon: '✓', title: 'Correct!', tone: 'good' },
+  [ITEM_STATUS.WRONG]: { icon: '✗', title: 'Not quite', tone: 'critical' },
+  [ITEM_STATUS.TIMEOUT]: { icon: '⏱', title: "Time's up!", tone: 'warning' },
+};
+
+export function renderQuizScreen(root, ctx, { state: initialState }) {
+  const { api } = ctx;
+  let state = initialState;
+  let mounted = true;
+  let busy = false; // one request at a time
   let lowTimeAnnounced = false;
 
-  const { timerMode } = session.config;
-  const questionLimitMs = getQuestionTimeLimitMs(session.config);
-  const sessionLimitMs = getSessionTimeLimitMs(session.config, session.items.length);
+  const { timerMode } = state.config;
+  let questionTimer = null;
+  let sessionTimer = null;
 
   /* ---------- static layout ---------- */
 
@@ -51,7 +45,7 @@ export function renderQuizScreen(root, ctx, { session: initialSession }) {
   const progressFill = h('span', { class: 'progress-fill' });
   const progressBar = h(
     'div',
-    { class: 'progress', attrs: { role: 'progressbar', 'aria-label': 'Quiz progress', 'aria-valuemin': '0', 'aria-valuemax': String(session.items.length) } },
+    { class: 'progress', attrs: { role: 'progressbar', 'aria-label': 'Quiz progress', 'aria-valuemin': '0', 'aria-valuemax': String(state.total) } },
     progressFill,
   );
   const pointsValue = h('strong', {}, '0');
@@ -72,68 +66,83 @@ export function renderQuizScreen(root, ctx, { session: initialSession }) {
   const endButton = h('button', { type: 'button', class: 'btn btn-ghost', onClick: () => endQuizEarly() }, 'End quiz');
   const nextButton = h('button', { type: 'button', class: 'btn btn-primary', hidden: true, dataset: { action: 'next' }, onClick: () => next() });
 
-  const screen = h(
-    'section',
-    { class: 'screen screen-quiz' },
+  root.append(
     h(
-      'div',
-      { class: 'quiz-topbar' },
-      h('div', { class: 'quiz-meta' }, progressText, h('span', { class: 'quiz-score' }, pointsValue, ' pts'), streakBadge, elapsedText),
-      ring?.el ?? null,
-    ),
-    progressBar,
-    h(
-      'article',
-      { class: 'card question-card' },
-      h('div', { class: 'question-chips' }, topicChipSlot),
-      questionText,
-      codeBlock,
-      optionList,
-      feedback,
-    ),
-    h(
-      'div',
-      { class: 'quiz-actions' },
-      endButton,
-      h('p', { class: 'kbd-hint' }, 'Keys: ', h('kbd', {}, '1'), '–', h('kbd', {}, '4'), ' answer · ', h('kbd', {}, '→'), ' next'),
-      nextButton,
+      'section',
+      { class: 'screen screen-quiz' },
+      h(
+        'div',
+        { class: 'quiz-topbar' },
+        h('div', { class: 'quiz-meta' }, progressText, h('span', { class: 'quiz-score' }, pointsValue, ' pts'), streakBadge, elapsedText),
+        ring?.el ?? null,
+      ),
+      progressBar,
+      h('article', { class: 'card question-card' }, h('div', { class: 'question-chips' }, topicChipSlot), questionText, codeBlock, optionList, feedback),
+      h(
+        'div',
+        { class: 'quiz-actions' },
+        endButton,
+        h('p', { class: 'kbd-hint' }, 'Keys: ', h('kbd', {}, '1'), '–', h('kbd', {}, '4'), ' answer · ', h('kbd', {}, '→'), ' next'),
+        nextButton,
+      ),
     ),
   );
-  root.append(screen);
 
-  /* ---------- timers ---------- */
+  /* ---------- timers (display only; the server keeps the real time) ---------- */
 
-  const sessionTimer = new Timer({
-    limitMs: sessionLimitMs,
-    elapsedMs: session.clock.sessionElapsedMs,
-    onTick: (state) => {
-      if (timerMode === TIMER_MODES.SESSION) {
-        ring.update(state);
-        maybeAnnounceLowTime(state.remainingMs);
-      } else if (timerMode === TIMER_MODES.OFF) {
-        elapsedText.textContent = `⏱ ${formatClock(state.elapsedMs)}`;
-      }
-    },
-    // Deferred: expiry can fire synchronously inside start() during a render,
-    // and finishing navigates away — never do that mid-render.
-    onExpire: () => queueMicrotask(handleSessionTimeUp),
-  });
-
-  let questionTimer = null;
-
-  function createQuestionTimer(elapsedMs) {
+  function stopTimers() {
     questionTimer?.dispose();
-    questionTimer = new Timer({
-      limitMs: questionLimitMs,
-      elapsedMs,
-      onTick: (state) => {
-        if (timerMode === TIMER_MODES.QUESTION) {
-          ring.update(state);
-          maybeAnnounceLowTime(state.remainingMs);
-        }
-      },
-      onExpire: () => queueMicrotask(handleQuestionTimeUp),
-    });
+    sessionTimer?.dispose();
+    questionTimer = null;
+    sessionTimer = null;
+  }
+
+  function startTimers() {
+    stopTimers();
+    const { clock } = state;
+    if (timerMode === TIMER_MODES.QUESTION) {
+      questionTimer = new Timer({
+        limitMs: clock.questionLimitMs,
+        elapsedMs: clock.questionElapsedMs,
+        onTick: (s) => {
+          ring.update(s);
+          maybeAnnounceLowTime(s.remainingMs);
+        },
+        // Deferred: start() ticks synchronously and may expire during render.
+        onExpire: () => queueMicrotask(() => reportTimeout()),
+      }).start();
+    } else if (timerMode === TIMER_MODES.SESSION) {
+      sessionTimer = new Timer({
+        limitMs: clock.sessionLimitMs,
+        elapsedMs: clock.sessionElapsedMs,
+        onTick: (s) => {
+          ring.update(s);
+          maybeAnnounceLowTime(s.remainingMs);
+        },
+        onExpire: () => queueMicrotask(() => finishQuiz()),
+      }).start();
+    } else {
+      sessionTimer = new Timer({
+        elapsedMs: clock.sessionElapsedMs,
+        onTick: (s) => {
+          elapsedText.textContent = `⏱ ${formatClock(s.elapsedMs)}`;
+        },
+      }).start();
+    }
+  }
+
+  /** Shows the frozen clock while feedback is on screen. */
+  function showStoppedClock() {
+    const { clock } = state;
+    if (timerMode === TIMER_MODES.QUESTION) {
+      const remaining = Math.max(0, clock.questionLimitMs - clock.questionElapsedMs);
+      ring.update({ remainingMs: remaining, fraction: remaining / clock.questionLimitMs });
+    } else if (timerMode === TIMER_MODES.SESSION) {
+      const remaining = Math.max(0, clock.sessionLimitMs - clock.sessionElapsedMs);
+      ring.update({ remainingMs: remaining, fraction: remaining / clock.sessionLimitMs });
+    } else {
+      elapsedText.textContent = `⏱ ${formatClock(clock.sessionElapsedMs)}`;
+    }
   }
 
   function maybeAnnounceLowTime(remainingMs) {
@@ -143,78 +152,59 @@ export function renderQuizScreen(root, ctx, { session: initialSession }) {
     }
   }
 
-  function pauseTimers() {
-    questionTimer?.pause();
-    sessionTimer.pause();
-  }
-
-  function snapshotClock() {
-    return {
-      questionElapsedMs: questionTimer?.elapsed() ?? session.clock.questionElapsedMs,
-      sessionElapsedMs: sessionTimer.elapsed(),
-    };
-  }
-
-  function persist() {
-    if (completed) return;
-    session = withClock(session, snapshotClock());
-    storage.saveActiveSession(session);
-  }
-
   /* ---------- rendering ---------- */
 
-  function currentQuestion() {
-    return bank.getQuestion(getCurrentItem(session).questionId);
-  }
+  let renderedPosition = null;
 
-  function renderHeader() {
-    const total = session.items.length;
-    const stats = getLiveStats(session);
-    progressText.textContent = `Question ${session.currentIndex + 1} of ${total}`;
-    progressFill.style.width = `${(stats.answered / total) * 100}%`;
-    progressBar.setAttribute('aria-valuenow', String(stats.answered));
-    progressBar.setAttribute('aria-valuetext', `${stats.answered} of ${total} answered`);
-    pointsValue.textContent = String(stats.points);
-    streakBadge.hidden = stats.streak < 2;
-    streakBadge.textContent = `🔥 ${stats.streak} in a row`;
-  }
-
-  function renderQuestion() {
-    const item = getCurrentItem(session);
-    const question = currentQuestion();
-
-    if (!question) {
-      // The bank changed since this quiz was saved: skip the orphaned question.
-      session = timeoutCurrent(session);
-      advance();
+  function render() {
+    if (state.status === 'finished') {
+      finishLocally();
       return;
     }
+    const { current, live, total } = state;
 
-    // The whole-quiz countdown should only warn once, not once per question.
-    if (timerMode === TIMER_MODES.QUESTION) lowTimeAnnounced = false;
-    renderHeader();
+    progressText.textContent = `Question ${current.position + 1} of ${total}`;
+    progressFill.style.width = `${(live.answered / total) * 100}%`;
+    progressBar.setAttribute('aria-valuenow', String(live.answered));
+    progressBar.setAttribute('aria-valuetext', `${live.answered} of ${total} answered`);
+    pointsValue.textContent = String(live.points);
+    streakBadge.hidden = live.streak < 2;
+    streakBadge.textContent = `🔥 ${live.streak} in a row`;
 
-    const topic = bank.getTopic(question.topic);
+    if (renderedPosition !== current.position) {
+      renderedPosition = current.position;
+      if (timerMode === TIMER_MODES.QUESTION) lowTimeAnnounced = false;
+      renderQuestion(current);
+    }
+
+    if (current.status === ITEM_STATUS.PENDING) {
+      setOptionsLocked(false);
+      startTimers();
+    } else {
+      stopTimers();
+      showStoppedClock();
+      showFeedback(current);
+    }
+  }
+
+  function renderQuestion(current) {
+    const { question } = current;
+    const topic = ctx.getTopic(question.topic);
     topicChipSlot.replaceChildren(chip(`${topic?.icon ?? ''} ${topic?.name ?? question.topic}`.trim()), difficultyChip(question.difficulty));
-    questionText.textContent = question.question;
+    questionText.textContent = question.prompt;
     codeBlock.hidden = !question.code;
     codeBlock.firstChild.textContent = question.code ?? '';
 
     optionList.replaceChildren(
-      ...item.optionOrder.map((originalIndex, displayIndex) =>
+      ...question.options.map((option, index) =>
         h(
           'li',
           {},
           h(
             'button',
-            {
-              type: 'button',
-              class: 'option',
-              dataset: { display: String(displayIndex), original: String(originalIndex) },
-              onClick: () => select(displayIndex),
-            },
-            h('span', { class: 'option-key', attrs: { 'aria-hidden': 'true' } }, OPTION_KEYS[displayIndex].toUpperCase()),
-            h('span', { class: 'option-text' }, question.options[originalIndex]),
+            { type: 'button', class: 'option', dataset: { optionId: String(option.id), index: String(index) }, onClick: () => select(option.id) },
+            h('span', { class: 'option-key', attrs: { 'aria-hidden': 'true' } }, OPTION_KEYS[index].toUpperCase()),
+            h('span', { class: 'option-text' }, option.text),
             h('span', { class: 'option-mark' }),
           ),
         ),
@@ -223,154 +213,150 @@ export function renderQuizScreen(root, ctx, { session: initialSession }) {
     feedback.replaceChildren();
     feedback.className = 'feedback';
     nextButton.hidden = true;
-    nextButton.textContent = isLastQuestion(session) ? 'See results →' : 'Next question →';
-
-    createQuestionTimer(session.clock.questionElapsedMs);
-
-    if (isItemAnswered(item)) {
-      // Resumed after answering but before moving on.
-      questionTimer.pause();
-      if (ring && timerMode === TIMER_MODES.QUESTION) ring.update(questionTimer.state());
-      if (ring && timerMode === TIMER_MODES.SESSION) ring.update(sessionTimer.state());
-      if (timerMode === TIMER_MODES.OFF) sessionTimer.tick();
-      showFeedback();
-      return;
-    }
-
-    sessionTimer.start();
-    questionTimer.start();
+    nextButton.textContent = current.isLast ? 'See results →' : 'Next question →';
     focusElement(questionText);
   }
 
-  function showFeedback() {
-    const item = getCurrentItem(session);
-    const question = currentQuestion();
+  function setOptionsLocked(locked) {
+    for (const button of optionList.querySelectorAll('.option')) button.disabled = locked;
+  }
 
+  function showFeedback(current) {
     for (const button of optionList.querySelectorAll('.option')) {
-      const original = Number(button.dataset.original);
-      const isCorrect = original === question.answer;
-      const isSelected = original === item.selected;
+      const id = Number(button.dataset.optionId);
+      const isCorrect = id === current.correctOptionId;
+      const isSelected = id === current.selectedOptionId;
       button.disabled = true;
+      button.classList.remove('is-pending');
       button.classList.toggle('is-correct', isCorrect);
       button.classList.toggle('is-wrong', isSelected && !isCorrect);
       button.classList.toggle('is-selected', isSelected);
-      const mark = button.querySelector('.option-mark');
-      mark.textContent = isCorrect ? '✓ Correct answer' : isSelected ? '✗ Your answer' : '';
+      button.querySelector('.option-mark').textContent = isCorrect ? '✓ Correct answer' : isSelected ? '✗ Your answer' : '';
     }
 
-    const correctText = question.options[question.answer];
-    const messages = {
-      [ITEM_STATUS.CORRECT]: { icon: '✓', title: 'Correct!', tone: 'good' },
-      [ITEM_STATUS.WRONG]: { icon: '✗', title: 'Not quite', tone: 'critical' },
-      [ITEM_STATUS.TIMEOUT]: { icon: '⏱', title: "Time's up!", tone: 'warning' },
-    };
-    const message = messages[item.status];
-    const pointsText = item.points > 0 ? `+${item.points} pts` : item.points < 0 ? `${item.points} pts` : '0 pts';
+    const message = FEEDBACK[current.status];
+    const correctText = current.question.options.find((o) => o.id === current.correctOptionId)?.text ?? '';
+    const pointsText = current.points > 0 ? `+${current.points} pts` : `${current.points} pts`;
 
     feedback.className = `feedback tone-${message.tone}`;
+    // Built with h() so the conditional line can be null (replaceChildren would print "null").
     feedback.replaceChildren(
-      h(
-        'p',
-        { class: 'feedback-title' },
-        h('span', { class: 'feedback-icon', attrs: { 'aria-hidden': 'true' } }, message.icon),
-        message.title,
-        h('span', { class: 'feedback-points' }, pointsText),
-      ),
-      item.status === ITEM_STATUS.CORRECT ? null : h('p', { class: 'feedback-answer' }, 'Correct answer: ', h('strong', {}, correctText)),
-      h('p', { class: 'feedback-explanation' }, question.explanation),
+      ...h(
+        'div',
+        {},
+        h(
+          'p',
+          { class: 'feedback-title' },
+          h('span', { class: 'feedback-icon', attrs: { 'aria-hidden': 'true' } }, message.icon),
+          message.title,
+          h('span', { class: 'feedback-points' }, pointsText),
+        ),
+        current.status === ITEM_STATUS.CORRECT ? null : h('p', { class: 'feedback-answer' }, 'Correct answer: ', h('strong', {}, correctText)),
+        h('p', { class: 'feedback-explanation' }, current.explanation),
+      ).childNodes,
     );
 
-    renderHeader();
     nextButton.hidden = false;
     focusElement(nextButton); // the aria-live feedback panel announces the result
   }
 
-  /* ---------- actions ---------- */
+  /* ---------- server round-trips ---------- */
 
-  function select(displayIndex) {
-    if (completed) return;
-    const item = getCurrentItem(session);
-    if (!item || isItemAnswered(item) || displayIndex >= item.optionOrder.length) return;
-
-    pauseTimers();
-    const clock = snapshotClock();
-    const { session: answered } = answerCurrent(session, bank, item.optionOrder[displayIndex], {
-      timeSpentMs: clock.questionElapsedMs,
-      remainingFraction: questionTimer.fraction(),
-    });
-    session = withClock(answered, clock);
-    persist();
-    showFeedback();
-  }
-
-  function handleQuestionTimeUp() {
-    if (!mounted || completed || isItemAnswered(getCurrentItem(session))) return;
-    sessionTimer.pause();
-    session = withClock(timeoutCurrent(session, { timeSpentMs: questionLimitMs }), snapshotClock());
-    persist();
-    showFeedback();
-  }
-
-  function handleSessionTimeUp() {
-    if (!mounted || completed) return;
-    questionTimer?.pause();
-    let final = session;
-    if (!isItemAnswered(getCurrentItem(final))) {
-      final = timeoutCurrent(final, { timeSpentMs: questionTimer?.elapsed() ?? 0 });
+  /**
+   * Runs one API call with the screen locked, then renders the returned state.
+   * On failure: a stale-tab conflict reloads the real state; anything else
+   * restores the screen so the player can try again.
+   */
+  async function act(call, { onFailure } = {}) {
+    if (busy || !mounted) return;
+    busy = true;
+    try {
+      const next = await call();
+      if (!mounted) return;
+      state = next;
+      render();
+    } catch (error) {
+      if (!mounted) return;
+      if (error.status === 409) {
+        try {
+          state = await api.getAttempt(state.id);
+          render();
+          return;
+        } catch (reloadError) {
+          ctx.handleError(reloadError);
+          return;
+        }
+      }
+      ctx.handleError(error);
+      onFailure?.();
+    } finally {
+      busy = false;
     }
-    finish(withClock(final, snapshotClock()), END_REASONS.TIME_UP);
-    ctx.toast("Time's up! Your quiz was submitted automatically.", { tone: 'warning' });
+  }
+
+  function select(optionId) {
+    if (busy || state.current?.status !== ITEM_STATUS.PENDING) return;
+    stopTimers();
+    setOptionsLocked(true);
+    optionList.querySelector(`[data-option-id="${optionId}"]`)?.classList.add('is-pending');
+    act(() => api.answer(state.id, state.current.position, optionId), {
+      onFailure: () => {
+        optionList.querySelector('.is-pending')?.classList.remove('is-pending');
+        render(); // unlocks the options and restarts the countdown (the server's clock still decides)
+      },
+    });
+  }
+
+  function reportTimeout() {
+    if (!mounted || state.current?.status !== ITEM_STATUS.PENDING) return;
+    setOptionsLocked(true);
+    act(() => api.answer(state.id, state.current.position, null), { onFailure: () => setOptionsLocked(false) });
   }
 
   function next() {
-    if (completed || !isItemAnswered(getCurrentItem(session))) return;
-    advance();
+    if (state.current?.status === ITEM_STATUS.PENDING) return;
+    act(() => api.next(state.id, state.current.position));
   }
 
-  function advance() {
-    if (isLastQuestion(session)) {
-      finish(session, END_REASONS.COMPLETED);
-      return;
-    }
-    session = goToNext(session, { now: ctx.now() });
-    persist();
-    renderQuestion();
+  function finishQuiz() {
+    stopTimers();
+    act(() => api.finish(state.id), { onFailure: () => render() });
   }
 
   async function endQuizEarly() {
-    if (completed) return;
+    if (busy) return;
     const ok = await confirmDialog({
       title: 'End the quiz now?',
       message: 'Unanswered questions will be marked as skipped and the attempt will be saved to your history.',
       confirmText: 'End quiz',
       danger: true,
     });
-    if (!ok || completed) return;
-    pauseTimers();
-    finish(withClock(session, snapshotClock()), END_REASONS.QUIT);
+    if (ok && mounted) finishQuiz();
   }
 
-  function finish(finalSession, reason) {
-    completed = true;
-    questionTimer?.dispose();
-    sessionTimer.dispose();
-    ctx.completeQuiz(finalSession, reason);
+  function finishLocally() {
+    if (!mounted) return;
+    stopTimers();
+    if (state.endReason === 'time-up') ctx.toast("Time's up! Your quiz was submitted automatically.", { tone: 'warning' });
+    ctx.completeQuiz(state);
   }
 
-  /* ---------- global listeners ---------- */
+  /* ---------- keyboard ---------- */
 
   function onKeyDown(event) {
-    if (completed || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (busy || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.target.closest?.('input, textarea, select, dialog')) return;
-    const item = getCurrentItem(session);
+    const current = state.current;
+    if (!current) return;
     const key = event.key.toLowerCase();
 
-    if (!isItemAnswered(item)) {
+    if (current.status === ITEM_STATUS.PENDING) {
       const digit = Number.parseInt(key, 10);
       const index = Number.isInteger(digit) ? digit - 1 : OPTION_KEYS.indexOf(key);
-      if (index >= 0 && index < item.optionOrder.length) {
+      const option = current.question.options[index];
+      if (index >= 0 && option) {
         event.preventDefault();
-        select(index);
+        select(option.id);
       }
     } else if (key === 'arrowright' || key === 'n') {
       event.preventDefault();
@@ -378,30 +364,14 @@ export function renderQuizScreen(root, ctx, { session: initialSession }) {
     }
   }
 
-  function onVisibilityChange() {
-    if (document.visibilityState === 'hidden') persist();
-  }
-
   document.addEventListener('keydown', onKeyDown);
-  document.addEventListener('visibilitychange', onVisibilityChange);
-  window.addEventListener('pagehide', persist);
-
-  renderQuestion();
-
-  /* ---------- cleanup (navigating away pauses and saves) ---------- */
+  render();
 
   return () => {
     mounted = false;
+    stopTimers();
     document.removeEventListener('keydown', onKeyDown);
-    document.removeEventListener('visibilitychange', onVisibilityChange);
-    window.removeEventListener('pagehide', persist);
     // Close a confirm dialog this screen may have left open.
     for (const cancel of document.querySelectorAll('dialog.dialog [data-action="cancel"]')) cancel.click();
-    if (!completed) {
-      pauseTimers();
-      persist();
-      questionTimer?.dispose();
-      sessionTimer.dispose();
-    }
   };
 }

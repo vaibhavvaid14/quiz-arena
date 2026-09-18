@@ -6,18 +6,13 @@
 import {
   DEFAULT_CONFIG,
   DIFFICULTY_FILTERS,
-  DIFFICULTY_META,
-  NEGATIVE_MARK_RATIO,
-  PLAYER_NAME_MAX_LENGTH,
+  DIFFICULTY_LABELS,
   QUESTION_COUNT_OPTIONS,
   SECONDS_PER_QUESTION_OPTIONS,
-  SPEED_BONUS_RATIO,
   TIMER_MODES,
 } from '../../core/config.js';
-import { QuizError, normalizeConfig } from '../../core/quizEngine.js';
-import { aggregateHistory } from '../../core/stats.js';
 import { confirmDialog } from '../dialog.js';
-import { formatClock, formatDate, h } from '../dom.js';
+import { formatClock, h } from '../dom.js';
 
 const TIMER_MODE_OPTIONS = [
   { value: TIMER_MODES.QUESTION, label: 'Per question', hint: 'A fresh countdown for every question. Faster answers earn a speed bonus.' },
@@ -25,17 +20,28 @@ const TIMER_MODE_OPTIONS = [
   { value: TIMER_MODES.OFF, label: 'No timer', hint: 'Take your time. Time spent is still recorded in your stats.' },
 ];
 
+/** Restores a saved setup, dropping anything the current catalog no longer offers. */
+function restoreConfig(saved, topics) {
+  const topicIds = topics.map((t) => t.id);
+  const c = { ...DEFAULT_CONFIG, topics: topicIds, ...(saved ?? {}) };
+  const savedTopics = Array.isArray(c.topics) ? c.topics.filter((id) => topicIds.includes(id)) : [];
+  return {
+    topics: saved ? savedTopics : topicIds,
+    difficulty: DIFFICULTY_FILTERS.includes(c.difficulty) ? c.difficulty : DEFAULT_CONFIG.difficulty,
+    count: QUESTION_COUNT_OPTIONS.includes(c.count) ? c.count : DEFAULT_CONFIG.count,
+    timerMode: Object.values(TIMER_MODES).includes(c.timerMode) ? c.timerMode : DEFAULT_CONFIG.timerMode,
+    secondsPerQuestion: SECONDS_PER_QUESTION_OPTIONS.includes(c.secondsPerQuestion) ? c.secondsPerQuestion : DEFAULT_CONFIG.secondsPerQuestion,
+    shuffle: typeof c.shuffle === 'boolean' ? c.shuffle : DEFAULT_CONFIG.shuffle,
+    negativeMarking: typeof c.negativeMarking === 'boolean' ? c.negativeMarking : DEFAULT_CONFIG.negativeMarking,
+  };
+}
+
 export function renderSetupScreen(root, ctx) {
-  const { bank, storage } = ctx;
-  const saved = storage.getPrefs().lastConfig;
-  const validTopicIds = new Set(bank.topics.map((t) => t.id));
-  const config = normalizeConfig({
-    ...DEFAULT_CONFIG,
-    topics: bank.topics.map((t) => t.id),
-    ...saved,
-  });
-  config.topics = config.topics.filter((id) => validTopicIds.has(id));
-  if (!QUESTION_COUNT_OPTIONS.includes(config.count)) config.count = DEFAULT_CONFIG.count;
+  const { api, storage, catalog } = ctx;
+  const { topics, rules } = catalog;
+  const config = restoreConfig(storage.getPrefs().lastConfig, topics);
+  let alive = true;
+  let activeAttempt = null;
 
   /* ---------- header, resume banner, quick stats ---------- */
 
@@ -47,26 +53,17 @@ export function renderSetupScreen(root, ctx) {
   );
 
   const resumeSlot = h('div');
-  function renderResumeBanner() {
-    const active = storage.getActiveSession();
-    resumeSlot.replaceChildren();
-    if (!active) return;
-    const answered = active.items.filter((item) => item.status !== 'pending').length;
-    const topicNames = active.config.topics.map((id) => bank.getTopic(id)?.name).filter(Boolean);
-    resumeSlot.append(
-      h(
+  const statsSlot = h('div');
+
+  function bannerFor(attempt) {
+    const topicNames = attempt.config.topics.map((id) => ctx.getTopic(id)?.name).filter(Boolean);
+    const summary = `${attempt.live.answered} of ${attempt.total} answered · ${topicNames.join(', ') || 'All topics'}`;
+    if (attempt.status === 'finished') {
+      // It ran out of time while the player was away; the server already scored it.
+      return h(
         'section',
-        { class: 'banner', attrs: { 'aria-label': 'Unfinished quiz' } },
-        h(
-          'div',
-          { class: 'banner-text' },
-          h('strong', {}, 'You have an unfinished quiz'),
-          h(
-            'span',
-            {},
-            `${answered} of ${active.items.length} answered · ${topicNames.join(', ') || 'All topics'} · started ${formatDate(active.createdAt)}`,
-          ),
-        ),
+        { class: 'banner', attrs: { 'aria-label': 'Quiz ended while you were away' } },
+        h('div', { class: 'banner-text' }, h('strong', {}, 'Your last quiz ran out of time while you were away'), h('span', {}, summary)),
         h(
           'div',
           { class: 'banner-actions' },
@@ -74,46 +71,105 @@ export function renderSetupScreen(root, ctx) {
             'button',
             {
               type: 'button',
-              class: 'btn btn-ghost',
-              onClick: async () => {
-                const ok = await confirmDialog({
-                  title: 'Discard unfinished quiz?',
-                  message: 'Your answers so far will be lost and this attempt will not be saved to history.',
-                  confirmText: 'Discard',
-                  danger: true,
-                });
-                if (!ok) return;
-                storage.clearActiveSession();
-                renderResumeBanner();
-                ctx.announce('Unfinished quiz discarded.');
+              class: 'btn btn-primary',
+              onClick: () => {
+                storage.clearActiveAttemptId();
+                ctx.navigate('results', { attemptId: attempt.id });
               },
             },
-            'Discard',
+            'See results',
           ),
-          h(
-            'button',
-            { type: 'button', class: 'btn btn-primary', dataset: { action: 'resume' }, onClick: () => ctx.navigate('quiz', { session: active }) },
-            'Resume quiz',
-          ),
+        ),
+      );
+    }
+    return h(
+      'section',
+      { class: 'banner', attrs: { 'aria-label': 'Unfinished quiz' } },
+      h('div', { class: 'banner-text' }, h('strong', {}, 'You have an unfinished quiz'), h('span', {}, summary)),
+      h(
+        'div',
+        { class: 'banner-actions' },
+        h(
+          'button',
+          {
+            type: 'button',
+            class: 'btn btn-ghost',
+            onClick: async () => {
+              const ok = await confirmDialog({
+                title: 'Discard unfinished quiz?',
+                message: 'Your answers so far will be lost and this attempt will not be saved to history.',
+                confirmText: 'Discard',
+                danger: true,
+              });
+              if (!ok) return;
+              try {
+                await api.discardAttempt(attempt.id);
+              } catch (error) {
+                if (error.status !== 404) return ctx.handleError(error);
+              }
+              storage.clearActiveAttemptId();
+              activeAttempt = null;
+              resumeSlot.replaceChildren();
+              ctx.announce('Unfinished quiz discarded.');
+            },
+          },
+          'Discard',
+        ),
+        h(
+          'button',
+          { type: 'button', class: 'btn btn-primary', dataset: { action: 'resume' }, onClick: () => resume(attempt.id) },
+          'Resume quiz',
         ),
       ),
     );
   }
-  renderResumeBanner();
 
-  const history = storage.getHistory();
-  const stats = aggregateHistory(history, bank.topics);
-  const statsStrip =
-    history.length > 0
-      ? h(
+  async function resume(attemptId) {
+    try {
+      const state = await api.getAttempt(attemptId);
+      if (state.status === 'finished') {
+        storage.clearActiveAttemptId();
+        ctx.navigate('results', { attemptId, fresh: true });
+      } else {
+        ctx.navigate('quiz', { state });
+      }
+    } catch (error) {
+      ctx.handleError(error);
+    }
+  }
+
+  async function loadActiveAttempt() {
+    const id = storage.getActiveAttemptId();
+    if (!id || !ctx.player) return;
+    try {
+      const attempt = await api.getAttempt(id);
+      if (!alive) return;
+      activeAttempt = attempt.status === 'active' ? attempt : null;
+      resumeSlot.replaceChildren(bannerFor(attempt));
+    } catch (error) {
+      if (error.status === 404 || error.status === 401) storage.clearActiveAttemptId();
+    }
+  }
+
+  async function loadStats() {
+    if (!ctx.player) return;
+    try {
+      const { stats } = await api.history();
+      if (!alive || stats.attempts === 0) return;
+      statsSlot.replaceChildren(
+        h(
           'section',
           { class: 'stats-strip', attrs: { 'aria-label': 'Your stats' } },
           h('span', {}, h('strong', {}, String(stats.attempts)), stats.attempts === 1 ? ' quiz taken' : ' quizzes taken'),
           h('span', {}, h('strong', {}, `${stats.averagePercentage}%`), ' average'),
           h('span', {}, h('strong', {}, `${stats.bestPercentage}%`), ' best'),
           h('button', { type: 'button', class: 'link-button', onClick: () => ctx.navigate('history') }, 'View history →'),
-        )
-      : null;
+        ),
+      );
+    } catch {
+      /* stats are optional decoration */
+    }
+  }
 
   /* ---------- player ---------- */
 
@@ -121,18 +177,23 @@ export function renderSetupScreen(root, ctx) {
     id: 'player-name',
     type: 'text',
     class: 'text-input',
-    value: config.playerName,
-    maxLength: PLAYER_NAME_MAX_LENGTH,
+    value: ctx.player?.name ?? '',
+    maxLength: rules.playerNameMax,
     autocomplete: 'nickname',
+    required: true,
     placeholder: 'e.g. Alex',
-    onInput: (event) => {
-      config.playerName = event.target.value;
-    },
+    attrs: { 'aria-describedby': 'player-name-hint' },
+    onInput: () => refresh(),
   });
   const playerCard = card(
     'Player',
-    h('label', { class: 'field-label', htmlFor: 'player-name' }, 'Your name ', h('span', { class: 'optional' }, '(optional)')),
+    h('label', { class: 'field-label', htmlFor: 'player-name' }, 'Your name'),
     nameInput,
+    h(
+      'p',
+      { class: 'hint', id: 'player-name-hint' },
+      'Shown on the leaderboard. The first time you use a name, this browser claims it.',
+    ),
   );
 
   /* ---------- topics ---------- */
@@ -142,7 +203,7 @@ export function renderSetupScreen(root, ctx) {
   const topicGrid = h(
     'div',
     { class: 'topic-grid' },
-    bank.topics.map((topic) => {
+    topics.map((topic) => {
       const input = h('input', {
         type: 'checkbox',
         class: 'topic-input',
@@ -150,7 +211,7 @@ export function renderSetupScreen(root, ctx) {
         value: topic.id,
         checked: config.topics.includes(topic.id),
         onChange: () => {
-          config.topics = bank.topics.map((t) => t.id).filter((id) => topicInputs.get(id).checked);
+          config.topics = topics.map((t) => t.id).filter((id) => topicInputs.get(id).checked);
           refresh();
         },
       });
@@ -170,7 +231,7 @@ export function renderSetupScreen(root, ctx) {
 
   const setAllTopics = (checked) => {
     for (const input of topicInputs.values()) input.checked = checked;
-    config.topics = checked ? bank.topics.map((t) => t.id) : [];
+    config.topics = checked ? topics.map((t) => t.id) : [];
     refresh();
   };
 
@@ -187,23 +248,19 @@ export function renderSetupScreen(root, ctx) {
 
   /* ---------- difficulty & length ---------- */
 
-  const difficultyGroup = segmented(
-    'difficulty',
-    DIFFICULTY_FILTERS.map((value) => ({ value, label: value === 'mixed' ? 'Mixed' : DIFFICULTY_META[value].label })),
-    config.difficulty,
-    (value) => {
-      config.difficulty = value;
-      refresh();
-    },
-  );
+  const points = rules.difficultyPoints;
   const difficultyCard = fieldsetCard(
     'Difficulty',
-    difficultyGroup,
-    h(
-      'p',
-      { class: 'hint' },
-      `Points per correct answer: ${DIFFICULTY_META.easy.points} easy · ${DIFFICULTY_META.medium.points} medium · ${DIFFICULTY_META.hard.points} hard.`,
+    segmented(
+      'difficulty',
+      DIFFICULTY_FILTERS.map((value) => ({ value, label: DIFFICULTY_LABELS[value] })),
+      config.difficulty,
+      (value) => {
+        config.difficulty = value;
+        refresh();
+      },
     ),
+    h('p', { class: 'hint' }, `Points per correct answer: ${points.easy} easy · ${points.medium} medium · ${points.hard} hard.`),
   );
 
   const availabilityHint = h('p', { class: 'hint', attrs: { 'aria-live': 'polite' } });
@@ -236,10 +293,6 @@ export function renderSetupScreen(root, ctx) {
     },
     SECONDS_PER_QUESTION_OPTIONS.map((s) => h('option', { value: String(s), selected: s === config.secondsPerQuestion }, `${s} seconds`)),
   );
-  if (!SECONDS_PER_QUESTION_OPTIONS.includes(config.secondsPerQuestion)) {
-    config.secondsPerQuestion = DEFAULT_CONFIG.secondsPerQuestion;
-    secondsSelect.value = String(config.secondsPerQuestion);
-  }
   const secondsField = h(
     'div',
     { class: 'inline-field' },
@@ -270,7 +323,7 @@ export function renderSetupScreen(root, ctx) {
     }),
     toggle(
       'Negative marking',
-      `Wrong answers cost ${Math.round(NEGATIVE_MARK_RATIO * 100)}% of the question's points. Your total never drops below zero.`,
+      `Wrong answers cost ${Math.round(rules.negativeMarkRatio * 100)}% of the question's points. Your total never drops below zero.`,
       config.negativeMarking,
       (checked) => {
         config.negativeMarking = checked;
@@ -283,6 +336,7 @@ export function renderSetupScreen(root, ctx) {
   const summaryText = h('p', { class: 'setup-summary' });
   const errorText = h('p', { class: 'form-error', attrs: { role: 'alert' } });
   const startButton = h('button', { type: 'submit', class: 'btn btn-primary btn-large', dataset: { action: 'start' } }, 'Start quiz →');
+  let busy = false;
 
   const form = h(
     'form',
@@ -291,13 +345,18 @@ export function renderSetupScreen(root, ctx) {
       noValidate: true,
       onSubmit: async (event) => {
         event.preventDefault();
-        const available = availableCount();
-        if (config.topics.length === 0 || available === 0) {
-          refresh();
+        if (busy) return;
+        const name = nameInput.value.trim();
+        if (!name) {
+          errorText.textContent = 'Enter your name to start.';
+          nameInput.focus();
+          return;
+        }
+        if (config.topics.length === 0 || availableCount() === 0) {
           errorText.textContent = config.topics.length === 0 ? 'Choose at least one topic.' : 'No questions match these settings.';
           return;
         }
-        if (storage.getActiveSession()) {
+        if (activeAttempt) {
           const ok = await confirmDialog({
             title: 'Start a new quiz?',
             message: 'You have an unfinished quiz. Starting a new one will discard it.',
@@ -306,11 +365,22 @@ export function renderSetupScreen(root, ctx) {
           });
           if (!ok) return;
         }
+        setBusy(true);
         try {
-          ctx.startQuiz({ ...config }); // the engine caps count at what is available
+          await ctx.ensurePlayer(name);
+          await ctx.startQuiz({ ...config }); // the server caps count at what is available
         } catch (error) {
-          if (!(error instanceof QuizError)) throw error;
-          errorText.textContent = error.message;
+          if (!alive) return;
+          if (error.code === 'name_taken') {
+            errorText.textContent = `${error.message} (It belongs to another browser.)`;
+            nameInput.focus();
+          } else if (error.status === 400) {
+            errorText.textContent = error.message;
+          } else {
+            ctx.handleError(error);
+          }
+        } finally {
+          if (alive) setBusy(false);
         }
       },
     },
@@ -322,15 +392,30 @@ export function renderSetupScreen(root, ctx) {
     h('div', { class: 'setup-footer' }, h('div', {}, summaryText, errorText), startButton),
   );
 
+  function setBusy(value) {
+    busy = value;
+    startButton.disabled = value || !isReady();
+    startButton.textContent = value ? 'Starting…' : 'Start quiz →';
+  }
+
+  function countFor(topic) {
+    return config.difficulty === 'mixed'
+      ? topic.counts.easy + topic.counts.medium + topic.counts.hard
+      : topic.counts[config.difficulty];
+  }
+
   function availableCount() {
-    return config.topics.length === 0 ? 0 : bank.filter({ topics: config.topics, difficulty: config.difficulty }).length;
+    return topics.filter((t) => config.topics.includes(t.id)).reduce((sum, t) => sum + countFor(t), 0);
+  }
+
+  function isReady() {
+    return config.topics.length > 0 && availableCount() > 0;
   }
 
   function refresh() {
-    const counts = bank.countByTopic(config.difficulty);
-    for (const [id, el] of topicCountEls) {
-      const n = counts[id] ?? 0;
-      el.textContent = `${n} question${n === 1 ? '' : 's'}`;
+    for (const topic of topics) {
+      const n = countFor(topic);
+      topicCountEls.get(topic.id).textContent = `${n} question${n === 1 ? '' : 's'}`;
     }
 
     const available = availableCount();
@@ -350,24 +435,27 @@ export function renderSetupScreen(root, ctx) {
       timing += ` Total: ${formatClock(count * config.secondsPerQuestion * 1000)}.`;
     }
     if (config.timerMode === TIMER_MODES.QUESTION) {
-      timing += ` (Up to +${Math.round(SPEED_BONUS_RATIO * 100)}% points.)`;
+      timing += ` (Up to +${Math.round(rules.speedBonusRatio * 100)}% points.)`;
     }
     timerHint.textContent = timing;
 
-    const ready = config.topics.length > 0 && available > 0;
-    startButton.disabled = !ready;
+    startButton.disabled = busy || !isReady();
     errorText.textContent = '';
-    summaryText.textContent = ready
-      ? `${count} question${count === 1 ? '' : 's'} · ${config.difficulty === 'mixed' ? 'mixed difficulty' : DIFFICULTY_META[config.difficulty].label.toLowerCase()} · ${
+    summaryText.textContent = isReady()
+      ? `${count} question${count === 1 ? '' : 's'} · ${config.difficulty === 'mixed' ? 'mixed difficulty' : DIFFICULTY_LABELS[config.difficulty].toLowerCase()} · ${
           config.timerMode === TIMER_MODES.OFF ? 'untimed' : `${config.secondsPerQuestion}s per question`
         }`
       : 'Choose at least one topic to begin.';
   }
 
   refresh();
+  root.append(h('section', { class: 'screen screen-setup' }, header, resumeSlot, statsSlot, form));
+  loadActiveAttempt();
+  loadStats();
 
-  root.append(h('section', { class: 'screen screen-setup' }, header, resumeSlot, statsStrip, form));
-  return null;
+  return () => {
+    alive = false;
+  };
 }
 
 /* ---------- small form builders ---------- */

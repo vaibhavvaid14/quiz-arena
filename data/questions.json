@@ -1,0 +1,1734 @@
+{
+  "version": 1,
+  "topics": [
+    {
+      "id": "javascript",
+      "name": "JavaScript",
+      "icon": "⚡",
+      "description": "Types, scope, closures, `this`, and the event loop."
+    },
+    {
+      "id": "web",
+      "name": "HTML & CSS",
+      "icon": "🎨",
+      "description": "Markup semantics, the box model, layout, and the cascade."
+    },
+    {
+      "id": "cs",
+      "name": "Computer Science",
+      "icon": "💻",
+      "description": "Data structures, algorithms, complexity, networking, and OS basics."
+    },
+    {
+      "id": "science",
+      "name": "General Science",
+      "icon": "🔬",
+      "description": "Core facts from physics, chemistry, biology, and astronomy."
+    },
+    {
+      "id": "geography",
+      "name": "World Geography",
+      "icon": "🌍",
+      "description": "Capitals, rivers, seas, and landforms around the globe."
+    },
+    {
+      "id": "math",
+      "name": "Math & Logic",
+      "icon": "🧮",
+      "description": "Arithmetic, algebra, geometry, probability, and reasoning puzzles."
+    }
+  ],
+  "questions": [
+    {
+      "id": "js-e01",
+      "topic": "javascript",
+      "difficulty": "easy",
+      "question": "Which keyword declares a block-scoped variable that cannot be reassigned?",
+      "options": [
+        "var",
+        "let",
+        "const",
+        "static"
+      ],
+      "answer": 2,
+      "explanation": "`const` creates a block-scoped binding that cannot be reassigned (though objects it points to can still be mutated)."
+    },
+    {
+      "id": "js-e02",
+      "topic": "javascript",
+      "difficulty": "easy",
+      "question": "What does `typeof null` return?",
+      "options": [
+        "\"null\"",
+        "\"object\"",
+        "\"undefined\"",
+        "\"number\""
+      ],
+      "answer": 1,
+      "explanation": "`typeof null` returns \"object\" — a long-standing quirk from the first JavaScript implementation that was kept for backward compatibility."
+    },
+    {
+      "id": "js-e03",
+      "topic": "javascript",
+      "difficulty": "easy",
+      "question": "Which array method adds one or more elements to the end of an array?",
+      "options": [
+        "push()",
+        "pop()",
+        "shift()",
+        "unshift()"
+      ],
+      "answer": 0,
+      "explanation": "`push()` appends elements to the end and returns the new length; `unshift()` adds to the start, while `pop()` and `shift()` remove elements."
+    },
+    {
+      "id": "js-e04",
+      "topic": "javascript",
+      "difficulty": "easy",
+      "question": "What does the expression `'5' + 3` evaluate to?",
+      "options": [
+        "8",
+        "NaN",
+        "35",
+        "\"53\""
+      ],
+      "answer": 3,
+      "explanation": "When either operand of `+` is a string, the other is converted to a string and the two are concatenated, giving \"53\"."
+    },
+    {
+      "id": "js-e05",
+      "topic": "javascript",
+      "difficulty": "easy",
+      "question": "Which operator compares two values for equality without performing type coercion?",
+      "options": [
+        "==",
+        "===",
+        "=",
+        "=>"
+      ],
+      "answer": 1,
+      "explanation": "`===` (strict equality) returns false if the types differ, whereas `==` converts operands first; `=` is assignment and `=>` defines an arrow function."
+    },
+    {
+      "id": "js-e06",
+      "topic": "javascript",
+      "difficulty": "easy",
+      "question": "Which method turns a JSON string into a JavaScript value?",
+      "options": [
+        "JSON.parse()",
+        "JSON.stringify()",
+        "JSON.toObject()",
+        "Object.fromJSON()"
+      ],
+      "answer": 0,
+      "explanation": "`JSON.parse()` parses JSON text into a value; `JSON.stringify()` does the reverse, and the other two methods do not exist."
+    },
+    {
+      "id": "js-e07",
+      "topic": "javascript",
+      "difficulty": "easy",
+      "question": "Which statement immediately exits the nearest enclosing loop?",
+      "options": [
+        "continue",
+        "exit",
+        "stop",
+        "break"
+      ],
+      "answer": 3,
+      "explanation": "`break` terminates the innermost loop (or switch); `continue` only skips to the next iteration, and `exit`/`stop` are not JavaScript statements."
+    },
+    {
+      "id": "js-m01",
+      "topic": "javascript",
+      "difficulty": "medium",
+      "question": "What does this code log?",
+      "code": "console.log(x);\nvar x = 5;",
+      "options": [
+        "5",
+        "undefined",
+        "ReferenceError",
+        "null"
+      ],
+      "answer": 1,
+      "explanation": "The `var` declaration is hoisted and initialized to `undefined`, but the assignment `x = 5` only runs after the log."
+    },
+    {
+      "id": "js-m02",
+      "topic": "javascript",
+      "difficulty": "medium",
+      "question": "What does this code log?",
+      "code": "for (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 0);\n}",
+      "options": [
+        "0 1 2",
+        "0 0 0",
+        "3 3 3",
+        "2 2 2"
+      ],
+      "answer": 2,
+      "explanation": "`var` is function-scoped, so all three callbacks share one `i`; by the time they run the loop has finished and `i` is 3. Using `let` would log 0 1 2."
+    },
+    {
+      "id": "js-m03",
+      "topic": "javascript",
+      "difficulty": "medium",
+      "question": "What does `[10, 1, 3].sort()` return?",
+      "options": [
+        "[1, 10, 3]",
+        "[1, 3, 10]",
+        "[10, 3, 1]",
+        "[3, 10, 1]"
+      ],
+      "answer": 0,
+      "explanation": "Without a compare function, `sort()` converts elements to strings and compares them lexicographically, so \"1\" < \"10\" < \"3\"."
+    },
+    {
+      "id": "js-m04",
+      "topic": "javascript",
+      "difficulty": "medium",
+      "question": "Which of these values is falsy?",
+      "options": [
+        "\"0\"",
+        "[]",
+        "{}",
+        "NaN"
+      ],
+      "answer": 3,
+      "explanation": "`NaN` is one of the falsy values (with `false`, `0`, `-0`, `0n`, `\"\"`, `null`, `undefined`); non-empty strings like \"0\" and all objects, including empty arrays, are truthy."
+    },
+    {
+      "id": "js-m05",
+      "topic": "javascript",
+      "difficulty": "medium",
+      "question": "What does this code log?",
+      "code": "const a = [1, 2, 3];\nconst b = a;\nb.push(4);\nconsole.log(a.length);",
+      "options": [
+        "3",
+        "4",
+        "undefined",
+        "Throws a TypeError"
+      ],
+      "answer": 1,
+      "explanation": "Assigning an array copies the reference, so `a` and `b` point to the same array and the push is visible through `a`; `const` only prevents rebinding, not mutation."
+    },
+    {
+      "id": "js-m06",
+      "topic": "javascript",
+      "difficulty": "medium",
+      "question": "What does `0.1 + 0.2 === 0.3` evaluate to?",
+      "options": [
+        "true",
+        "NaN",
+        "false",
+        "undefined"
+      ],
+      "answer": 2,
+      "explanation": "Numbers are IEEE 754 binary doubles, and neither 0.1 nor 0.2 is exactly representable, so the sum is 0.30000000000000004, which is not strictly equal to 0.3."
+    },
+    {
+      "id": "js-m07",
+      "topic": "javascript",
+      "difficulty": "medium",
+      "question": "What do `null == undefined` and `null === undefined` evaluate to, respectively?",
+      "options": [
+        "true, false",
+        "false, false",
+        "true, true",
+        "false, true"
+      ],
+      "answer": 0,
+      "explanation": "Loose equality treats `null` and `undefined` as equal to each other (and to nothing else), while strict equality also compares types, which differ (null vs undefined)."
+    },
+    {
+      "id": "js-h01",
+      "topic": "javascript",
+      "difficulty": "hard",
+      "question": "In what order are the letters logged?",
+      "code": "console.log('A');\nsetTimeout(() => console.log('B'), 0);\nPromise.resolve().then(() => console.log('C'));\nconsole.log('D');",
+      "options": [
+        "A B C D",
+        "A D B C",
+        "A D C B",
+        "A C D B"
+      ],
+      "answer": 2,
+      "explanation": "Synchronous code runs first (A, D); then the microtask queue (promise callback C) is drained before the next macrotask (the `setTimeout` callback B)."
+    },
+    {
+      "id": "js-h02",
+      "topic": "javascript",
+      "difficulty": "hard",
+      "question": "What happens when this code runs?",
+      "code": "'use strict';\nconst obj = {\n  value: 42,\n  getValue() { return this.value; },\n};\nconst fn = obj.getValue;\nconsole.log(fn());",
+      "options": [
+        "Throws a TypeError",
+        "Logs 42",
+        "Logs undefined",
+        "Logs null"
+      ],
+      "answer": 0,
+      "explanation": "Calling the extracted method as a plain function loses its receiver, so in strict mode `this` is `undefined` and reading `this.value` throws a TypeError."
+    },
+    {
+      "id": "js-h03",
+      "topic": "javascript",
+      "difficulty": "hard",
+      "question": "What happens when this code runs?",
+      "code": "let a = 1;\n{\n  console.log(a);\n  let a = 2;\n}",
+      "options": [
+        "Logs 1",
+        "Logs 2",
+        "Logs undefined",
+        "Throws a ReferenceError"
+      ],
+      "answer": 3,
+      "explanation": "The inner `let a` is hoisted to the top of the block but stays in the temporal dead zone until its declaration, so it shadows the outer `a` and accessing it early throws a ReferenceError."
+    },
+    {
+      "id": "js-h04",
+      "topic": "javascript",
+      "difficulty": "hard",
+      "question": "In what order are the numbers logged?",
+      "code": "async function f() {\n  console.log(1);\n  await null;\n  console.log(2);\n}\nf();\nconsole.log(3);",
+      "options": [
+        "1 2 3",
+        "1 3 2",
+        "3 1 2",
+        "2 1 3"
+      ],
+      "answer": 1,
+      "explanation": "An async function runs synchronously until its first `await` (logging 1), then yields; the caller logs 3, and the rest of `f` resumes later as a microtask, logging 2."
+    },
+    {
+      "id": "js-h05",
+      "topic": "javascript",
+      "difficulty": "hard",
+      "question": "What does `[1, 2, 3].map(parseInt)` return?",
+      "options": [
+        "[1, 2, 3]",
+        "[NaN, NaN, NaN]",
+        "[1, NaN, 3]",
+        "[1, NaN, NaN]"
+      ],
+      "answer": 3,
+      "explanation": "`map` passes (value, index), so the calls are parseInt('1', 0) → 1 (radix 0 means default base 10), parseInt('2', 1) → NaN (radix 1 is invalid), and parseInt('3', 2) → NaN ('3' is not a binary digit)."
+    },
+    {
+      "id": "js-h06",
+      "topic": "javascript",
+      "difficulty": "hard",
+      "question": "What does this code log?",
+      "code": "const a = {};\nconst b = { key: 'b' };\nconst c = { key: 'c' };\na[b] = 123;\na[c] = 456;\nconsole.log(a[b]);",
+      "options": [
+        "123",
+        "undefined",
+        "456",
+        "Throws a TypeError"
+      ],
+      "answer": 2,
+      "explanation": "Plain-object property keys are converted to strings, and both `b` and `c` stringify to \"[object Object]\", so `a[c] = 456` overwrites the same key and `a[b]` reads 456."
+    },
+    {
+      "id": "web-e01",
+      "topic": "web",
+      "difficulty": "easy",
+      "question": "What does HTML stand for?",
+      "options": [
+        "HyperText Markup Language",
+        "HighText Machine Language",
+        "Hyperlink and Text Markup Language",
+        "Home Tool Markup Language"
+      ],
+      "answer": 0,
+      "explanation": "HTML is the HyperText Markup Language, the standard markup language for structuring web pages."
+    },
+    {
+      "id": "web-e02",
+      "topic": "web",
+      "difficulty": "easy",
+      "question": "Which HTML element creates a hyperlink to another page?",
+      "options": [
+        "<link>",
+        "<a>",
+        "<href>",
+        "<nav>"
+      ],
+      "answer": 1,
+      "explanation": "The anchor element `<a>` with an `href` attribute creates a hyperlink; `<link>` connects external resources such as stylesheets."
+    },
+    {
+      "id": "web-e03",
+      "topic": "web",
+      "difficulty": "easy",
+      "question": "Which CSS property sets the color of text?",
+      "options": [
+        "font-color",
+        "text-color",
+        "color",
+        "foreground"
+      ],
+      "answer": 2,
+      "explanation": "The `color` property sets the foreground (text) color; `font-color` and `text-color` are not valid CSS properties."
+    },
+    {
+      "id": "web-e04",
+      "topic": "web",
+      "difficulty": "easy",
+      "question": "Which attribute provides alternative text for an <img> element?",
+      "options": [
+        "title",
+        "src",
+        "caption",
+        "alt"
+      ],
+      "answer": 3,
+      "explanation": "The `alt` attribute supplies a text alternative that screen readers announce and browsers show if the image cannot load."
+    },
+    {
+      "id": "web-e05",
+      "topic": "web",
+      "difficulty": "easy",
+      "question": "Which HTML element represents the top-level (most important) heading?",
+      "options": [
+        "<head>",
+        "<h6>",
+        "<h1>",
+        "<header>"
+      ],
+      "answer": 2,
+      "explanation": "Headings run from `<h1>` (highest level) to `<h6>` (lowest); `<head>` holds document metadata and `<header>` is a sectioning container."
+    },
+    {
+      "id": "web-e06",
+      "topic": "web",
+      "difficulty": "easy",
+      "question": "Which HTML element creates a numbered (ordered) list?",
+      "options": [
+        "<ol>",
+        "<ul>",
+        "<li>",
+        "<dl>"
+      ],
+      "answer": 0,
+      "explanation": "`<ol>` is an ordered list whose items are numbered by default; `<ul>` is unordered (bulleted), `<li>` is a list item, and `<dl>` is a description list."
+    },
+    {
+      "id": "web-e07",
+      "topic": "web",
+      "difficulty": "easy",
+      "question": "In a CSS selector, which character prefixes a class name?",
+      "options": [
+        "#",
+        ".",
+        "@",
+        ":"
+      ],
+      "answer": 1,
+      "explanation": "Class selectors start with a dot (e.g. `.card`); `#` selects an ID, `@` begins an at-rule, and `:` introduces a pseudo-class."
+    },
+    {
+      "id": "web-m01",
+      "topic": "web",
+      "difficulty": "medium",
+      "question": "What is the total rendered width of .box, excluding margins?",
+      "code": ".box {\n  box-sizing: content-box;\n  width: 200px;\n  padding: 10px;\n  border: 5px solid black;\n}",
+      "options": [
+        "200px",
+        "215px",
+        "220px",
+        "230px"
+      ],
+      "answer": 3,
+      "explanation": "With `content-box`, `width` covers only the content, so padding and border are added on both sides: 200 + 2×10 + 2×5 = 230px."
+    },
+    {
+      "id": "web-m02",
+      "topic": "web",
+      "difficulty": "medium",
+      "question": "Which `position` value takes an element out of normal flow and places it relative to its nearest positioned ancestor?",
+      "options": [
+        "relative",
+        "absolute",
+        "static",
+        "sticky"
+      ],
+      "answer": 1,
+      "explanation": "`position: absolute` removes the element from normal flow and offsets it from the nearest ancestor whose position is not `static`."
+    },
+    {
+      "id": "web-m03",
+      "topic": "web",
+      "difficulty": "medium",
+      "question": "Which option hides an element while still reserving its space in the layout?",
+      "options": [
+        "visibility: hidden",
+        "display: none",
+        "the hidden attribute",
+        "display: contents"
+      ],
+      "answer": 0,
+      "explanation": "`visibility: hidden` makes the element invisible but keeps its box in the layout; `display: none` and the `hidden` attribute remove the box entirely."
+    },
+    {
+      "id": "web-m04",
+      "topic": "web",
+      "difficulty": "medium",
+      "question": "Which CSS unit is relative to the font size of the root (<html>) element?",
+      "options": [
+        "em",
+        "%",
+        "rem",
+        "vh"
+      ],
+      "answer": 2,
+      "explanation": "`rem` means \"root em\" and is based on the root element font size, whereas `em` is relative to the element's own (or parent's) font size."
+    },
+    {
+      "id": "web-m05",
+      "topic": "web",
+      "difficulty": "medium",
+      "question": "Which CSS property controls which of several overlapping positioned elements appears on top?",
+      "options": [
+        "order",
+        "stack-level",
+        "layer",
+        "z-index"
+      ],
+      "answer": 3,
+      "explanation": "`z-index` sets the stack level of positioned elements (and of flex and grid items), with higher values painted in front; `order` only changes the visual order of flex/grid items along the axis."
+    },
+    {
+      "id": "web-m06",
+      "topic": "web",
+      "difficulty": "medium",
+      "question": "Which `<input>` type lets the user select exactly one option from a group of inputs sharing the same `name`?",
+      "options": [
+        "checkbox",
+        "radio",
+        "toggle",
+        "choice"
+      ],
+      "answer": 1,
+      "explanation": "Radio buttons with the same `name` form a group in which checking one unchecks the others; checkboxes allow any number to be checked, and `toggle`/`choice` are not input types."
+    },
+    {
+      "id": "web-m07",
+      "topic": "web",
+      "difficulty": "medium",
+      "question": "Which `display` value keeps an element flowing inline with surrounding text while letting `width` and `height` take effect?",
+      "options": [
+        "inline",
+        "block",
+        "inline-block",
+        "contents"
+      ],
+      "answer": 2,
+      "explanation": "`inline-block` sits in the line like inline content but generates a box that honors width and height; plain `inline` boxes ignore those properties, and `block` starts on a new line."
+    },
+    {
+      "id": "web-h01",
+      "topic": "web",
+      "difficulty": "hard",
+      "question": "What does the `defer` attribute do on an external <script>?",
+      "options": [
+        "Downloads in parallel and runs after parsing finishes, in document order",
+        "Downloads in parallel and runs as soon as it arrives, in any order",
+        "Blocks HTML parsing until the script has downloaded and run",
+        "Waits until every image has loaded, then runs the script"
+      ],
+      "answer": 0,
+      "explanation": "Deferred scripts are fetched without blocking the parser and execute in order once the document is parsed, before `DOMContentLoaded`; `async` is the one that runs as soon as it arrives."
+    },
+    {
+      "id": "web-h02",
+      "topic": "web",
+      "difficulty": "hard",
+      "question": "What is the shorthand `flex: 1` equivalent to?",
+      "options": [
+        "flex: 1 0 auto",
+        "flex: 1 1 0%",
+        "flex: 0 1 auto",
+        "flex: 1 1 auto"
+      ],
+      "answer": 1,
+      "explanation": "A single unitless number sets `flex-grow` and defaults `flex-shrink` to 1 and `flex-basis` to 0%, so space is shared purely by grow factor."
+    },
+    {
+      "id": "web-h03",
+      "topic": "web",
+      "difficulty": "hard",
+      "question": "Two block siblings are stacked vertically as shown. How much vertical space separates them?",
+      "code": ".a { margin-bottom: 30px; }\n.b { margin-top: 20px; }\n/* <div class=\"a\"></div><div class=\"b\"></div> */",
+      "options": [
+        "50px",
+        "20px",
+        "30px",
+        "10px"
+      ],
+      "answer": 2,
+      "explanation": "Adjacent vertical margins of block elements in normal flow collapse into a single margin equal to the larger one, so the gap is 30px, not 50px."
+    },
+    {
+      "id": "web-h04",
+      "topic": "web",
+      "difficulty": "hard",
+      "question": "What is the specificity (IDs, classes, elements) of the selector `ul#menu li.active a`?",
+      "options": [
+        "(0, 1, 3)",
+        "(1, 2, 2)",
+        "(1, 0, 4)",
+        "(1, 1, 3)"
+      ],
+      "answer": 3,
+      "explanation": "It has one ID (#menu), one class (.active), and three type selectors (ul, li, a), giving (1, 1, 3)."
+    },
+    {
+      "id": "web-h05",
+      "topic": "web",
+      "difficulty": "hard",
+      "question": "The grid has no gap, padding, or border. How wide is the third column?",
+      "code": ".grid {\n  display: grid;\n  width: 600px;\n  grid-template-columns: 200px 1fr 3fr;\n}",
+      "options": [
+        "360px",
+        "400px",
+        "450px",
+        "300px"
+      ],
+      "answer": 3,
+      "explanation": "Fixed tracks are sized first, leaving 600 − 200 = 400px of free space, which is split across 1 + 3 = 4 fr units of 100px each, so 3fr = 300px."
+    },
+    {
+      "id": "web-h06",
+      "topic": "web",
+      "difficulty": "hard",
+      "question": "An author stylesheet rule marked `!important` and a normal (non-important) inline `style` attribute set the same property on an element. Which value applies?",
+      "options": [
+        "The !important stylesheet declaration",
+        "The inline style declaration",
+        "Whichever declaration appears later",
+        "Whichever has the higher specificity"
+      ],
+      "answer": 0,
+      "explanation": "The cascade compares origin and importance before specificity or order, and important author declarations outrank all normal author declarations, including inline styles."
+    },
+    {
+      "id": "cs-e01",
+      "topic": "cs",
+      "difficulty": "easy",
+      "question": "Which data structure follows Last-In, First-Out (LIFO) order?",
+      "options": [
+        "Queue",
+        "Stack",
+        "Linked list",
+        "Hash table"
+      ],
+      "answer": 1,
+      "explanation": "A stack removes the most recently added item first (push/pop), whereas a queue is First-In, First-Out."
+    },
+    {
+      "id": "cs-e02",
+      "topic": "cs",
+      "difficulty": "easy",
+      "question": "How many bits are in one byte?",
+      "options": [
+        "4",
+        "16",
+        "8",
+        "32"
+      ],
+      "answer": 2,
+      "explanation": "A byte is 8 bits, which can represent 2^8 = 256 distinct values."
+    },
+    {
+      "id": "cs-e03",
+      "topic": "cs",
+      "difficulty": "easy",
+      "question": "What must be true of an array for binary search to work correctly?",
+      "options": [
+        "It must be sorted",
+        "It must contain only numbers",
+        "It must have no duplicates",
+        "Its length must be a power of two"
+      ],
+      "answer": 0,
+      "explanation": "Binary search discards half the range on each step by comparing with the middle element, which only works if the elements are in sorted order."
+    },
+    {
+      "id": "cs-e04",
+      "topic": "cs",
+      "difficulty": "easy",
+      "question": "What does CPU stand for?",
+      "options": [
+        "Central Program Unit",
+        "Computer Processing Unit",
+        "Core Processing Utility",
+        "Central Processing Unit"
+      ],
+      "answer": 3,
+      "explanation": "The CPU, or Central Processing Unit, executes program instructions."
+    },
+    {
+      "id": "cs-e05",
+      "topic": "cs",
+      "difficulty": "easy",
+      "question": "What is the main job of DNS?",
+      "options": [
+        "Encrypting web traffic",
+        "Assigning IP addresses to devices",
+        "Translating domain names into IP addresses",
+        "Routing packets between networks"
+      ],
+      "answer": 2,
+      "explanation": "The Domain Name System resolves human-readable names like example.com into IP addresses, so people can use names instead of numeric addresses; it neither hands out addresses nor encrypts traffic."
+    },
+    {
+      "id": "cs-e06",
+      "topic": "cs",
+      "difficulty": "easy",
+      "question": "Which type of memory is volatile, losing its contents when power is switched off?",
+      "options": [
+        "RAM",
+        "SSD",
+        "Hard disk drive",
+        "ROM"
+      ],
+      "answer": 0,
+      "explanation": "RAM needs power to hold its data, so its contents vanish at shutdown; SSDs, hard disks, and ROM are non-volatile and keep data without power."
+    },
+    {
+      "id": "cs-e07",
+      "topic": "cs",
+      "difficulty": "easy",
+      "question": "Which logic gate outputs 1 only when both of its inputs are 1?",
+      "options": [
+        "OR",
+        "AND",
+        "XOR",
+        "NOT"
+      ],
+      "answer": 1,
+      "explanation": "AND is true only if all inputs are true; OR needs at least one true input, XOR needs exactly one, and NOT has a single input."
+    },
+    {
+      "id": "cs-m01",
+      "topic": "cs",
+      "difficulty": "medium",
+      "question": "What is the worst-case time complexity of binary search on n sorted elements?",
+      "options": [
+        "O(n)",
+        "O(log n)",
+        "O(n log n)",
+        "O(1)"
+      ],
+      "answer": 1,
+      "explanation": "Each comparison halves the remaining search range, so at most about log2(n) steps are needed."
+    },
+    {
+      "id": "cs-m02",
+      "topic": "cs",
+      "difficulty": "medium",
+      "question": "Which TCP port is the default for HTTPS?",
+      "options": [
+        "80",
+        "21",
+        "443",
+        "8080"
+      ],
+      "answer": 2,
+      "explanation": "HTTPS uses port 443 by default; port 80 is plain HTTP and port 21 is FTP."
+    },
+    {
+      "id": "cs-m03",
+      "topic": "cs",
+      "difficulty": "medium",
+      "question": "What is the binary number 1011 in decimal?",
+      "options": [
+        "11",
+        "13",
+        "9",
+        "10"
+      ],
+      "answer": 0,
+      "explanation": "1011 in binary is 1×8 + 0×4 + 1×2 + 1×1 = 8 + 2 + 1 = 11."
+    },
+    {
+      "id": "cs-m04",
+      "topic": "cs",
+      "difficulty": "medium",
+      "question": "At which layer of the OSI model does TCP operate?",
+      "options": [
+        "Network",
+        "Data link",
+        "Session",
+        "Transport"
+      ],
+      "answer": 3,
+      "explanation": "TCP is a Layer 4 (Transport) protocol providing reliable, ordered delivery; IP operates at Layer 3 (Network)."
+    },
+    {
+      "id": "cs-m05",
+      "topic": "cs",
+      "difficulty": "medium",
+      "question": "What is the average-case time complexity of looking up a key in a well-implemented hash table?",
+      "options": [
+        "O(1)",
+        "O(log n)",
+        "O(n)",
+        "O(n log n)"
+      ],
+      "answer": 0,
+      "explanation": "Hashing the key jumps straight to a bucket, and with a good hash function and a bounded load factor each bucket holds a constant expected number of entries, giving O(1) on average (O(n) in the worst case)."
+    },
+    {
+      "id": "cs-m06",
+      "topic": "cs",
+      "difficulty": "medium",
+      "question": "Which traversal of a binary search tree visits its keys in ascending sorted order?",
+      "options": [
+        "Pre-order",
+        "In-order",
+        "Post-order",
+        "Level-order"
+      ],
+      "answer": 1,
+      "explanation": "In-order traversal visits left subtree, node, then right subtree, and since every left key is smaller and every right key larger, keys come out sorted."
+    },
+    {
+      "id": "cs-m07",
+      "topic": "cs",
+      "difficulty": "medium",
+      "question": "Which protocol automatically assigns IP addresses to devices that join a network?",
+      "options": [
+        "DNS",
+        "ARP",
+        "SMTP",
+        "DHCP"
+      ],
+      "answer": 3,
+      "explanation": "DHCP (Dynamic Host Configuration Protocol) leases IP addresses and settings to hosts; ARP maps IP addresses to MAC addresses, DNS resolves names, and SMTP sends email."
+    },
+    {
+      "id": "cs-h01",
+      "topic": "cs",
+      "difficulty": "hard",
+      "question": "What is the time complexity of building a binary heap from n unsorted elements with bottom-up heapify?",
+      "options": [
+        "O(log n)",
+        "O(n)",
+        "O(n log n)",
+        "O(n²)"
+      ],
+      "answer": 1,
+      "explanation": "Most nodes sit near the bottom and sift down only a few levels; summing the work per level gives a series bounded by O(n), not O(n log n)."
+    },
+    {
+      "id": "cs-h02",
+      "topic": "cs",
+      "difficulty": "hard",
+      "question": "What is the worst-case time complexity of quicksort?",
+      "options": [
+        "O(n log n)",
+        "O(n)",
+        "O(n²)",
+        "O(log n)"
+      ],
+      "answer": 2,
+      "explanation": "If the pivot is always the smallest or largest element (e.g. first-element pivot on sorted input), each partition removes only one element, giving O(n²)."
+    },
+    {
+      "id": "cs-h03",
+      "topic": "cs",
+      "difficulty": "hard",
+      "question": "Which of these is NOT one of the four necessary (Coffman) conditions for deadlock?",
+      "options": [
+        "Starvation",
+        "Mutual exclusion",
+        "Circular wait",
+        "Hold and wait"
+      ],
+      "answer": 0,
+      "explanation": "The four conditions are mutual exclusion, hold and wait, no preemption, and circular wait; starvation is a separate liveness problem."
+    },
+    {
+      "id": "cs-h04",
+      "topic": "cs",
+      "difficulty": "hard",
+      "question": "Under which condition can Dijkstra's shortest-path algorithm produce incorrect results?",
+      "options": [
+        "The graph contains cycles",
+        "The graph is undirected",
+        "The graph is disconnected",
+        "The graph has negative edge weights"
+      ],
+      "answer": 3,
+      "explanation": "Dijkstra finalizes a node once it is popped, assuming later paths can only be longer; a negative edge can make a later path shorter, breaking that assumption (Bellman-Ford handles this)."
+    },
+    {
+      "id": "cs-h05",
+      "topic": "cs",
+      "difficulty": "hard",
+      "question": "Which of these sorting algorithms, in its standard form, is both stable and O(n log n) in the worst case?",
+      "options": [
+        "Quicksort",
+        "Heapsort",
+        "Merge sort",
+        "Insertion sort"
+      ],
+      "answer": 2,
+      "explanation": "Merge sort always splits in half (O(n log n)) and its merge keeps equal keys in their original order; quicksort and heapsort are not stable, and insertion sort is O(n²) in the worst case."
+    },
+    {
+      "id": "cs-h06",
+      "topic": "cs",
+      "difficulty": "hard",
+      "question": "What value does the 8-bit two's-complement pattern 11111111 represent?",
+      "options": [
+        "255",
+        "−127",
+        "−128",
+        "−1"
+      ],
+      "answer": 3,
+      "explanation": "Unsigned, 11111111 is 255; in 8-bit two's complement the top bit has weight −128, so the value is −128 + 127 = −1 (equivalently 255 − 256)."
+    },
+    {
+      "id": "sci-e01",
+      "topic": "science",
+      "difficulty": "easy",
+      "question": "What is the chemical symbol for gold?",
+      "options": [
+        "Ag",
+        "Au",
+        "Gd",
+        "Go"
+      ],
+      "answer": 1,
+      "explanation": "Gold's symbol Au comes from its Latin name \"aurum\"; Ag is silver and Gd is gadolinium."
+    },
+    {
+      "id": "sci-e02",
+      "topic": "science",
+      "difficulty": "easy",
+      "question": "Which planet is closest to the Sun?",
+      "options": [
+        "Venus",
+        "Mars",
+        "Mercury",
+        "Earth"
+      ],
+      "answer": 2,
+      "explanation": "Mercury orbits closest to the Sun, at an average distance of about 0.39 astronomical units."
+    },
+    {
+      "id": "sci-e03",
+      "topic": "science",
+      "difficulty": "easy",
+      "question": "Which gas do plants take in from the air for photosynthesis?",
+      "options": [
+        "Carbon dioxide",
+        "Oxygen",
+        "Nitrogen",
+        "Hydrogen"
+      ],
+      "answer": 0,
+      "explanation": "Photosynthesis uses carbon dioxide and water, powered by light, to make glucose, releasing oxygen as a by-product."
+    },
+    {
+      "id": "sci-e04",
+      "topic": "science",
+      "difficulty": "easy",
+      "question": "Which organelle produces most of a cell's ATP through cellular respiration?",
+      "options": [
+        "Nucleus",
+        "Ribosome",
+        "Golgi apparatus",
+        "Mitochondrion"
+      ],
+      "answer": 3,
+      "explanation": "Mitochondria carry out aerobic respiration, generating most of the cell's ATP, which is why they are called the powerhouse of the cell."
+    },
+    {
+      "id": "sci-e05",
+      "topic": "science",
+      "difficulty": "easy",
+      "question": "What is the chemical formula of water?",
+      "options": [
+        "CO₂",
+        "H₂O₂",
+        "H₂O",
+        "NaCl"
+      ],
+      "answer": 2,
+      "explanation": "Each water molecule has two hydrogen atoms bonded to one oxygen atom, H₂O; H₂O₂ is hydrogen peroxide, CO₂ is carbon dioxide, and NaCl is table salt."
+    },
+    {
+      "id": "sci-e06",
+      "topic": "science",
+      "difficulty": "easy",
+      "question": "What is the largest planet in our solar system?",
+      "options": [
+        "Saturn",
+        "Jupiter",
+        "Neptune",
+        "Uranus"
+      ],
+      "answer": 1,
+      "explanation": "Jupiter is the largest planet, with more than twice the mass of all the other planets combined; Saturn is second."
+    },
+    {
+      "id": "sci-e07",
+      "topic": "science",
+      "difficulty": "easy",
+      "question": "At standard sea-level pressure, at what temperature does pure water boil?",
+      "options": [
+        "90 °C",
+        "110 °C",
+        "212 °C",
+        "100 °C"
+      ],
+      "answer": 3,
+      "explanation": "At 1 atmosphere pure water boils at 100 °C, which is 212 °F — so 212 is the right number only on the Fahrenheit scale."
+    },
+    {
+      "id": "sci-m01",
+      "topic": "science",
+      "difficulty": "medium",
+      "question": "What is the SI unit of force?",
+      "options": [
+        "Joule",
+        "Newton",
+        "Watt",
+        "Pascal"
+      ],
+      "answer": 1,
+      "explanation": "The newton (N) is the SI unit of force: 1 N = 1 kg·m/s². Joules measure energy, watts power, and pascals pressure."
+    },
+    {
+      "id": "sci-m02",
+      "topic": "science",
+      "difficulty": "medium",
+      "question": "What is the pH of pure water at 25 °C?",
+      "options": [
+        "0",
+        "14",
+        "7",
+        "1"
+      ],
+      "answer": 2,
+      "explanation": "At 25 °C pure water has equal H+ and OH- concentrations of 10^-7 mol/L, so its pH is 7 (neutral)."
+    },
+    {
+      "id": "sci-m03",
+      "topic": "science",
+      "difficulty": "medium",
+      "question": "Which blood type is known as the universal donor for red blood cells?",
+      "options": [
+        "O negative",
+        "AB positive",
+        "A negative",
+        "B positive"
+      ],
+      "answer": 0,
+      "explanation": "O-negative red cells carry no A, B, or Rh(D) antigens, so they will not be attacked by recipients' antibodies; AB positive is the universal recipient."
+    },
+    {
+      "id": "sci-m04",
+      "topic": "science",
+      "difficulty": "medium",
+      "question": "Which gas makes up the largest share of Earth's atmosphere?",
+      "options": [
+        "Oxygen",
+        "Argon",
+        "Carbon dioxide",
+        "Nitrogen"
+      ],
+      "answer": 3,
+      "explanation": "Dry air is about 78% nitrogen, 21% oxygen, and just under 1% argon, with carbon dioxide a small trace."
+    },
+    {
+      "id": "sci-m05",
+      "topic": "science",
+      "difficulty": "medium",
+      "question": "The number of which particle defines an element's atomic number?",
+      "options": [
+        "Proton",
+        "Neutron",
+        "Electron",
+        "Nucleon"
+      ],
+      "answer": 0,
+      "explanation": "The atomic number is the count of protons in the nucleus, which fixes the element's identity; protons plus neutrons (nucleons) give the mass number, and electrons vary in ions."
+    },
+    {
+      "id": "sci-m06",
+      "topic": "science",
+      "difficulty": "medium",
+      "question": "Which mineral is the hardest, ranked 10 on the Mohs scale?",
+      "options": [
+        "Quartz",
+        "Topaz",
+        "Corundum",
+        "Diamond"
+      ],
+      "answer": 3,
+      "explanation": "Diamond sits at 10, the top of the Mohs scale; corundum is 9, topaz 8, and quartz 7."
+    },
+    {
+      "id": "sci-m07",
+      "topic": "science",
+      "difficulty": "medium",
+      "question": "What type of chemical bond forms when two atoms share a pair of electrons?",
+      "options": [
+        "Ionic",
+        "Covalent",
+        "Metallic",
+        "Hydrogen"
+      ],
+      "answer": 1,
+      "explanation": "A covalent bond is a shared electron pair between atoms; ionic bonds come from electron transfer and electrostatic attraction between ions, and hydrogen bonds are weaker intermolecular attractions."
+    },
+    {
+      "id": "sci-h01",
+      "topic": "science",
+      "difficulty": "hard",
+      "question": "Which value is Avogadro's constant (particles per mole)?",
+      "options": [
+        "3.00 × 10^8",
+        "6.022 × 10^23",
+        "1.602 × 10^-19",
+        "6.674 × 10^-11"
+      ],
+      "answer": 1,
+      "explanation": "One mole contains about 6.022 × 10^23 particles; the other values are the speed of light (m/s), the elementary charge (C), and the gravitational constant."
+    },
+    {
+      "id": "sci-h02",
+      "topic": "science",
+      "difficulty": "hard",
+      "question": "What is the approximate half-life of carbon-14, the basis of radiocarbon dating?",
+      "options": [
+        "1,600 years",
+        "24,000 years",
+        "5,730 years",
+        "50,000 years"
+      ],
+      "answer": 2,
+      "explanation": "Carbon-14 decays with a half-life of about 5,730 years, which makes it useful for dating organic material up to roughly 50,000 years old."
+    },
+    {
+      "id": "sci-h03",
+      "topic": "science",
+      "difficulty": "hard",
+      "question": "During meiosis, which event exchanges genetic material between homologous chromosomes?",
+      "options": [
+        "Crossing over in prophase I",
+        "Cytokinesis after telophase II",
+        "DNA replication in S phase",
+        "Sister chromatid separation in anaphase II"
+      ],
+      "answer": 0,
+      "explanation": "In prophase I, paired homologous chromosomes swap segments by crossing over, creating new allele combinations."
+    },
+    {
+      "id": "sci-h04",
+      "topic": "science",
+      "difficulty": "hard",
+      "question": "What primarily causes the daytime sky to appear blue?",
+      "options": [
+        "Sunlight reflecting off the oceans",
+        "Mie scattering by dust and droplets",
+        "Ozone absorbing red light",
+        "Rayleigh scattering of shorter wavelengths"
+      ],
+      "answer": 3,
+      "explanation": "Air molecules scatter light with intensity proportional to 1/λ^4 (Rayleigh scattering), so short blue wavelengths are scattered across the sky far more than red."
+    },
+    {
+      "id": "sci-h05",
+      "topic": "science",
+      "difficulty": "hard",
+      "question": "In RNA, which base pairs with adenine?",
+      "options": [
+        "Thymine",
+        "Cytosine",
+        "Uracil",
+        "Guanine"
+      ],
+      "answer": 2,
+      "explanation": "RNA uses uracil in place of DNA's thymine, so adenine pairs with uracil; cytosine pairs with guanine in both."
+    },
+    {
+      "id": "sci-h06",
+      "topic": "science",
+      "difficulty": "hard",
+      "question": "Which element has the highest electronegativity on the Pauling scale?",
+      "options": [
+        "Fluorine",
+        "Oxygen",
+        "Chlorine",
+        "Nitrogen"
+      ],
+      "answer": 0,
+      "explanation": "Fluorine is the most electronegative element at about 3.98, ahead of oxygen (about 3.44); its small size and nearly full valence shell pull bonding electrons strongly."
+    },
+    {
+      "id": "geo-e01",
+      "topic": "geography",
+      "difficulty": "easy",
+      "question": "What is the largest ocean on Earth?",
+      "options": [
+        "Atlantic Ocean",
+        "Pacific Ocean",
+        "Indian Ocean",
+        "Arctic Ocean"
+      ],
+      "answer": 1,
+      "explanation": "The Pacific is the largest and deepest ocean, covering roughly a third of Earth's surface."
+    },
+    {
+      "id": "geo-e02",
+      "topic": "geography",
+      "difficulty": "easy",
+      "question": "What is the capital of Japan?",
+      "options": [
+        "Kyoto",
+        "Osaka",
+        "Tokyo",
+        "Hiroshima"
+      ],
+      "answer": 2,
+      "explanation": "Tokyo is Japan's capital; Kyoto was the imperial capital for over a thousand years before the move in the 19th century."
+    },
+    {
+      "id": "geo-e03",
+      "topic": "geography",
+      "difficulty": "easy",
+      "question": "On which continent is Kenya located?",
+      "options": [
+        "Africa",
+        "Asia",
+        "South America",
+        "Oceania"
+      ],
+      "answer": 0,
+      "explanation": "Kenya lies in East Africa, on the Indian Ocean coast, straddling the equator."
+    },
+    {
+      "id": "geo-e04",
+      "topic": "geography",
+      "difficulty": "easy",
+      "question": "Canberra is the capital city of which country?",
+      "options": [
+        "New Zealand",
+        "Austria",
+        "Canada",
+        "Australia"
+      ],
+      "answer": 3,
+      "explanation": "Canberra was purpose-built as Australia's capital as a compromise between rivals Sydney and Melbourne."
+    },
+    {
+      "id": "geo-e05",
+      "topic": "geography",
+      "difficulty": "easy",
+      "question": "What is the capital of Italy?",
+      "options": [
+        "Milan",
+        "Rome",
+        "Venice",
+        "Naples"
+      ],
+      "answer": 1,
+      "explanation": "Rome is Italy's capital; Milan is its main financial centre, and Venice and Naples are other major cities."
+    },
+    {
+      "id": "geo-e06",
+      "topic": "geography",
+      "difficulty": "easy",
+      "question": "Which is the largest continent by land area?",
+      "options": [
+        "Africa",
+        "North America",
+        "Antarctica",
+        "Asia"
+      ],
+      "answer": 3,
+      "explanation": "Asia covers about 44 million km², roughly 30% of Earth's land area, far more than second-place Africa."
+    },
+    {
+      "id": "geo-e07",
+      "topic": "geography",
+      "difficulty": "easy",
+      "question": "Cairo is the capital of which country?",
+      "options": [
+        "Egypt",
+        "Morocco",
+        "Tunisia",
+        "Libya"
+      ],
+      "answer": 0,
+      "explanation": "Cairo, on the Nile, is Egypt's capital; the capitals of Morocco, Tunisia, and Libya are Rabat, Tunis, and Tripoli."
+    },
+    {
+      "id": "geo-m01",
+      "topic": "geography",
+      "difficulty": "medium",
+      "question": "Which river flows through Baghdad?",
+      "options": [
+        "Euphrates",
+        "Tigris",
+        "Jordan",
+        "Indus"
+      ],
+      "answer": 1,
+      "explanation": "Baghdad sits on the Tigris; the Euphrates runs parallel to the west, and the two rivers join to form the Shatt al-Arab."
+    },
+    {
+      "id": "geo-m02",
+      "topic": "geography",
+      "difficulty": "medium",
+      "question": "What is the capital of Canada?",
+      "options": [
+        "Toronto",
+        "Vancouver",
+        "Ottawa",
+        "Montreal"
+      ],
+      "answer": 2,
+      "explanation": "Ottawa, in Ontario, is the capital of Canada, even though Toronto and Montreal are larger cities."
+    },
+    {
+      "id": "geo-m03",
+      "topic": "geography",
+      "difficulty": "medium",
+      "question": "Which strait separates Europe (Spain) from Africa (Morocco)?",
+      "options": [
+        "Strait of Gibraltar",
+        "Bosporus",
+        "Strait of Hormuz",
+        "Strait of Malacca"
+      ],
+      "answer": 0,
+      "explanation": "The Strait of Gibraltar links the Atlantic Ocean to the Mediterranean Sea between Spain and Morocco."
+    },
+    {
+      "id": "geo-m04",
+      "topic": "geography",
+      "difficulty": "medium",
+      "question": "Which of these South American countries is landlocked?",
+      "options": [
+        "Peru",
+        "Chile",
+        "Colombia",
+        "Bolivia"
+      ],
+      "answer": 3,
+      "explanation": "Bolivia has no coastline (it lost its Pacific coast to Chile in the War of the Pacific); Paraguay is the only other landlocked country in South America."
+    },
+    {
+      "id": "geo-m05",
+      "topic": "geography",
+      "difficulty": "medium",
+      "question": "What is the largest hot desert in the world?",
+      "options": [
+        "Gobi",
+        "Kalahari",
+        "Sahara",
+        "Arabian"
+      ],
+      "answer": 2,
+      "explanation": "The Sahara spans about 9 million km² of North Africa; only the polar deserts of Antarctica and the Arctic are larger, and they are cold deserts."
+    },
+    {
+      "id": "geo-m06",
+      "topic": "geography",
+      "difficulty": "medium",
+      "question": "What is the capital of Turkey?",
+      "options": [
+        "Ankara",
+        "Istanbul",
+        "Izmir",
+        "Antalya"
+      ],
+      "answer": 0,
+      "explanation": "Ankara has been Turkey's capital since 1923; Istanbul is the largest city and was the Ottoman capital, which is why it is often mistaken for the capital."
+    },
+    {
+      "id": "geo-m07",
+      "topic": "geography",
+      "difficulty": "medium",
+      "question": "Mount Kilimanjaro is located in which country?",
+      "options": [
+        "Kenya",
+        "Tanzania",
+        "Uganda",
+        "Ethiopia"
+      ],
+      "answer": 1,
+      "explanation": "Kilimanjaro, Africa's highest mountain, stands in northeastern Tanzania, close to the Kenyan border."
+    },
+    {
+      "id": "geo-h01",
+      "topic": "geography",
+      "difficulty": "hard",
+      "question": "What is the capital of Mongolia?",
+      "options": [
+        "Almaty",
+        "Ulaanbaatar",
+        "Bishkek",
+        "Tashkent"
+      ],
+      "answer": 1,
+      "explanation": "Ulaanbaatar is Mongolia's capital; Bishkek is the capital of Kyrgyzstan, Tashkent of Uzbekistan, and Almaty is a major city in Kazakhstan."
+    },
+    {
+      "id": "geo-h02",
+      "topic": "geography",
+      "difficulty": "hard",
+      "question": "Which is the deepest lake in the world?",
+      "options": [
+        "Lake Tanganyika",
+        "Lake Superior",
+        "Lake Baikal",
+        "Lake Victoria"
+      ],
+      "answer": 2,
+      "explanation": "Lake Baikal in Siberia reaches about 1,640 m deep, making it the deepest lake; Lake Tanganyika is second."
+    },
+    {
+      "id": "geo-h03",
+      "topic": "geography",
+      "difficulty": "hard",
+      "question": "Lesotho is completely surrounded by which country?",
+      "options": [
+        "South Africa",
+        "Botswana",
+        "Namibia",
+        "Zimbabwe"
+      ],
+      "answer": 0,
+      "explanation": "Lesotho is an enclave entirely within South Africa, one of only three sovereign states surrounded by a single other country."
+    },
+    {
+      "id": "geo-h04",
+      "topic": "geography",
+      "difficulty": "hard",
+      "question": "Into which sea does the Danube River empty?",
+      "options": [
+        "Adriatic Sea",
+        "Caspian Sea",
+        "Baltic Sea",
+        "Black Sea"
+      ],
+      "answer": 3,
+      "explanation": "The Danube flows east from Germany's Black Forest and empties into the Black Sea through a delta in Romania and Ukraine."
+    },
+    {
+      "id": "geo-h05",
+      "topic": "geography",
+      "difficulty": "hard",
+      "question": "Which strait separates Asia (Russia) from North America (Alaska)?",
+      "options": [
+        "Strait of Magellan",
+        "Davis Strait",
+        "Bass Strait",
+        "Bering Strait"
+      ],
+      "answer": 3,
+      "explanation": "The Bering Strait, about 82 km wide at its narrowest, lies between Russia's Chukotka Peninsula and Alaska; Magellan is at South America's tip, Davis between Greenland and Canada, and Bass between Australia and Tasmania."
+    },
+    {
+      "id": "geo-h06",
+      "topic": "geography",
+      "difficulty": "hard",
+      "question": "Which sea lies between the Italian Peninsula and Croatia?",
+      "options": [
+        "Aegean Sea",
+        "Tyrrhenian Sea",
+        "Adriatic Sea",
+        "Ligurian Sea"
+      ],
+      "answer": 2,
+      "explanation": "The Adriatic separates Italy's east coast from the Balkan coast, including Croatia; the Tyrrhenian and Ligurian seas lie west of Italy, and the Aegean lies between Greece and Turkey."
+    },
+    {
+      "id": "math-e01",
+      "topic": "math",
+      "difficulty": "easy",
+      "question": "What is 7 × 8?",
+      "options": [
+        "54",
+        "56",
+        "58",
+        "64"
+      ],
+      "answer": 1,
+      "explanation": "7 × 8 = 56 (for example, 7 × 8 = 7 × 10 − 7 × 2 = 70 − 14 = 56)."
+    },
+    {
+      "id": "math-e02",
+      "topic": "math",
+      "difficulty": "easy",
+      "question": "What is 15% of 200?",
+      "options": [
+        "15",
+        "20",
+        "30",
+        "35"
+      ],
+      "answer": 2,
+      "explanation": "15% of 200 = 0.15 × 200 = 30 (10% is 20 and 5% is 10, so 20 + 10 = 30)."
+    },
+    {
+      "id": "math-e03",
+      "topic": "math",
+      "difficulty": "easy",
+      "question": "What is the smallest prime number greater than 7?",
+      "options": [
+        "11",
+        "9",
+        "13",
+        "10"
+      ],
+      "answer": 0,
+      "explanation": "8 = 2×4, 9 = 3×3, and 10 = 2×5 are composite, while 11 has no divisors other than 1 and itself."
+    },
+    {
+      "id": "math-e04",
+      "topic": "math",
+      "difficulty": "easy",
+      "question": "What is the sum of the interior angles of any triangle?",
+      "options": [
+        "90°",
+        "360°",
+        "270°",
+        "180°"
+      ],
+      "answer": 3,
+      "explanation": "In Euclidean geometry the three interior angles of a triangle always add up to 180°."
+    },
+    {
+      "id": "math-e05",
+      "topic": "math",
+      "difficulty": "easy",
+      "question": "What is 144 ÷ 12?",
+      "options": [
+        "11",
+        "13",
+        "12",
+        "14"
+      ],
+      "answer": 2,
+      "explanation": "12 × 12 = 144, so 144 ÷ 12 = 12."
+    },
+    {
+      "id": "math-e06",
+      "topic": "math",
+      "difficulty": "easy",
+      "question": "What is the square root of 81?",
+      "options": [
+        "9",
+        "8",
+        "7",
+        "27"
+      ],
+      "answer": 0,
+      "explanation": "9 × 9 = 81, so √81 = 9 (whereas 8 × 8 = 64 and 27 = 81 ÷ 3)."
+    },
+    {
+      "id": "math-e07",
+      "topic": "math",
+      "difficulty": "easy",
+      "question": "What is 3/4 written as a decimal?",
+      "options": [
+        "0.34",
+        "0.43",
+        "0.7",
+        "0.75"
+      ],
+      "answer": 3,
+      "explanation": "3 ÷ 4 = 0.75 (a quarter is 0.25, and 3 × 0.25 = 0.75)."
+    },
+    {
+      "id": "math-m01",
+      "topic": "math",
+      "difficulty": "medium",
+      "question": "Solve for x: 3x + 5 = 20",
+      "options": [
+        "3",
+        "5",
+        "15",
+        "25/3"
+      ],
+      "answer": 1,
+      "explanation": "Subtract 5 from both sides to get 3x = 15, then divide by 3: x = 5."
+    },
+    {
+      "id": "math-m02",
+      "topic": "math",
+      "difficulty": "medium",
+      "question": "What is the area of a circle with radius 3?",
+      "options": [
+        "6π",
+        "3π",
+        "9π",
+        "12π"
+      ],
+      "answer": 2,
+      "explanation": "Area = πr² = π × 3² = 9π; 6π would be the circumference (2πr)."
+    },
+    {
+      "id": "math-m03",
+      "topic": "math",
+      "difficulty": "medium",
+      "question": "All bloops are razzies, and all razzies are lazzies. Which statement must be true?",
+      "options": [
+        "All bloops are lazzies",
+        "All lazzies are bloops",
+        "Some razzies are not bloops",
+        "No lazzies are bloops"
+      ],
+      "answer": 0,
+      "explanation": "Set inclusion is transitive: bloops ⊆ razzies ⊆ lazzies, so every bloop is a lazzie; the reverse and the other claims do not follow."
+    },
+    {
+      "id": "math-m04",
+      "topic": "math",
+      "difficulty": "medium",
+      "question": "In how many different orders can 5 distinct books be arranged on a shelf?",
+      "options": [
+        "25",
+        "60",
+        "100",
+        "120"
+      ],
+      "answer": 3,
+      "explanation": "There are 5! = 5 × 4 × 3 × 2 × 1 = 120 permutations of 5 distinct items."
+    },
+    {
+      "id": "math-m05",
+      "topic": "math",
+      "difficulty": "medium",
+      "question": "What is the next number in the sequence 2, 6, 12, 20, 30, …?",
+      "options": [
+        "40",
+        "42",
+        "44",
+        "36"
+      ],
+      "answer": 1,
+      "explanation": "The differences are 4, 6, 8, 10, so the next difference is 12 and 30 + 12 = 42 (each term is n(n + 1), and 6 × 7 = 42)."
+    },
+    {
+      "id": "math-m06",
+      "topic": "math",
+      "difficulty": "medium",
+      "question": "A rectangle has a perimeter of 30 and a length of 9. What is its area?",
+      "options": [
+        "54",
+        "45",
+        "63",
+        "36"
+      ],
+      "answer": 0,
+      "explanation": "Perimeter 2(l + w) = 30 gives l + w = 15, so w = 15 − 9 = 6 and the area is 9 × 6 = 54."
+    },
+    {
+      "id": "math-m07",
+      "topic": "math",
+      "difficulty": "medium",
+      "question": "What is the mean (average) of 4, 8, 15, 16, and 23?",
+      "options": [
+        "15",
+        "12.6",
+        "14",
+        "13.2"
+      ],
+      "answer": 3,
+      "explanation": "The sum is 4 + 8 + 15 + 16 + 23 = 66, and 66 ÷ 5 = 13.2 (15 is the median, not the mean)."
+    },
+    {
+      "id": "math-h01",
+      "topic": "math",
+      "difficulty": "hard",
+      "question": "Two fair coins are flipped. Given that at least one shows heads, what is the probability that both show heads?",
+      "options": [
+        "1/2",
+        "1/3",
+        "1/4",
+        "2/3"
+      ],
+      "answer": 1,
+      "explanation": "Conditioning on \"at least one head\" leaves three equally likely outcomes (HH, HT, TH), only one of which is HH, so the probability is 1/3."
+    },
+    {
+      "id": "math-h02",
+      "topic": "math",
+      "difficulty": "hard",
+      "question": "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost?",
+      "options": [
+        "$0.10",
+        "$0.01",
+        "$0.05",
+        "$0.15"
+      ],
+      "answer": 2,
+      "explanation": "If the ball costs b, the bat costs b + 1.00, so 2b + 1.00 = 1.10, giving b = 0.05; a $0.10 ball would make the total $1.20."
+    },
+    {
+      "id": "math-h03",
+      "topic": "math",
+      "difficulty": "hard",
+      "question": "How many diagonals does a convex hexagon have?",
+      "options": [
+        "9",
+        "6",
+        "12",
+        "15"
+      ],
+      "answer": 0,
+      "explanation": "A convex n-gon has n(n − 3)/2 diagonals, so a hexagon has 6 × 3 / 2 = 9."
+    },
+    {
+      "id": "math-h04",
+      "topic": "math",
+      "difficulty": "hard",
+      "question": "A disease affects 1% of people. A test detects it 90% of the time when present and gives a false positive 9% of the time when absent. If a random person tests positive, roughly how likely are they to have the disease?",
+      "options": [
+        "About 90%",
+        "About 50%",
+        "About 1%",
+        "About 9%"
+      ],
+      "answer": 3,
+      "explanation": "True positives are 0.01 × 0.90 = 0.009 and false positives 0.99 × 0.09 = 0.0891, so P(disease | positive) = 0.009 / 0.0981 ≈ 0.092, about 9%."
+    },
+    {
+      "id": "math-h05",
+      "topic": "math",
+      "difficulty": "hard",
+      "question": "How many trailing zeros does 25! (25 factorial) have?",
+      "options": [
+        "5",
+        "6",
+        "4",
+        "7"
+      ],
+      "answer": 1,
+      "explanation": "Each trailing zero needs a factor 10 = 2 × 5, and 5s are the scarcer factor: ⌊25/5⌋ + ⌊25/25⌋ = 5 + 1 = 6, since 25 contributes two 5s."
+    },
+    {
+      "id": "math-h06",
+      "topic": "math",
+      "difficulty": "hard",
+      "question": "A fair six-sided die is rolled 4 times. What is the probability of getting at least one six?",
+      "options": [
+        "2/3",
+        "625/1296",
+        "671/1296",
+        "1/2"
+      ],
+      "answer": 2,
+      "explanation": "P(no six) = (5/6)^4 = 625/1296, so P(at least one six) = 1 − 625/1296 = 671/1296 ≈ 0.518; 4 × 1/6 = 2/3 wrongly adds overlapping events."
+    }
+  ]
+}

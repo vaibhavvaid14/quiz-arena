@@ -1,5 +1,6 @@
 /**
- * Persistence layer (repository pattern over a key/value backend).
+ * Browser-side persistence for things that belong to this device only.
+ * Quiz content, attempts, scores and history live in the server's database.
  *
  * Keys are namespaced and every value is wrapped in a versioned envelope
  * `{ v: <schema version>, data: <payload> }`. Corrupt or out-of-date entries are
@@ -7,12 +8,12 @@
  * (and browsers with storage disabled) run on an in-memory map.
  *
  * Keys
- *   quizapp:prefs          last used config + theme
- *   quizapp:activeSession  the in-progress quiz (resume after reload)
- *   quizapp:history        finished attempts, newest first (capped)
+ *   quizapp:prefs          last used quiz setup + theme
+ *   quizapp:players        names claimed on this device -> secret player keys
+ *   quizapp:activeAttempt  id of the unfinished quiz, to offer "resume"
  */
 
-import { HISTORY_LIMIT, STORAGE_NAMESPACE, STORAGE_SCHEMA_VERSION } from './config.js';
+import { STORAGE_NAMESPACE, STORAGE_SCHEMA_VERSION } from './config.js';
 
 export function createMemoryBackend(initial = {}) {
   const map = new Map(Object.entries(initial));
@@ -84,8 +85,10 @@ export function createStorage(backend = createMemoryBackend(), { namespace = STO
   }
 
   const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
-  const isSession = (s) => isObject(s) && s.status === 'active' && Array.isArray(s.items) && s.items.length > 0 && isObject(s.config);
-  const isHistoryEntry = (e) => isObject(e) && typeof e.id === 'string' && isObject(e.summary) && Array.isArray(e.items);
+  const isPlayers = (v) =>
+    isObject(v) && Array.isArray(v.known) && v.known.every((p) => typeof p?.name === 'string' && typeof p?.key === 'string');
+  const readPlayers = () => read('players', { current: null, known: [] }, isPlayers);
+  const sameName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }) === 0;
 
   return {
     getPrefs: () => read('prefs', {}, isObject),
@@ -94,21 +97,36 @@ export function createStorage(backend = createMemoryBackend(), { namespace = STO
       return write('prefs', { ...read('prefs', {}, isObject), ...patch });
     },
 
-    getActiveSession: () => read('activeSession', null, isSession),
-    saveActiveSession: (session) => write('activeSession', session),
-    clearActiveSession: () => remove('activeSession'),
+    /** The player currently playing on this device: { name, key } or null. */
+    getCurrentPlayer() {
+      const { current, known } = readPlayers();
+      return (current && known.find((p) => sameName(p.name, current))) ?? null;
+    },
+    /** A name this device already owns (case-insensitive), or null. */
+    findKnownPlayer(name) {
+      return readPlayers().known.find((p) => sameName(p.name, name)) ?? null;
+    },
+    /** Remembers a player and makes them current. */
+    rememberPlayer(player) {
+      const { known } = readPlayers();
+      const others = known.filter((p) => !sameName(p.name, player.name));
+      return write('players', { current: player.name, known: [...others, { name: player.name, key: player.key }] });
+    },
+    setCurrentPlayer(name) {
+      const players = readPlayers();
+      return write('players', { ...players, current: name });
+    },
+    /** Drops a player whose key the server no longer recognises (e.g. database reset). */
+    forgetPlayer(name) {
+      const { current, known } = readPlayers();
+      return write('players', {
+        current: current && sameName(current, name) ? null : current,
+        known: known.filter((p) => !sameName(p.name, name)),
+      });
+    },
 
-    getHistory: () => read('history', [], Array.isArray).filter(isHistoryEntry),
-    getHistoryEntry(id) {
-      return this.getHistory().find((entry) => entry.id === id) ?? null;
-    },
-    /** Adds (or replaces, by id) an attempt and keeps only the newest HISTORY_LIMIT. */
-    addHistoryEntry(entry) {
-      const history = this.getHistory().filter((existing) => existing.id !== entry.id);
-      history.unshift(entry);
-      write('history', history.slice(0, HISTORY_LIMIT));
-      return entry;
-    },
-    clearHistory: () => remove('history'),
+    getActiveAttemptId: () => read('activeAttempt', null, (v) => typeof v === 'string' && v.length > 0),
+    setActiveAttemptId: (id) => write('activeAttempt', id),
+    clearActiveAttemptId: () => remove('activeAttempt'),
   };
 }
