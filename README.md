@@ -1,5 +1,12 @@
 # Quiz Arena
 
+[![tests](https://github.com/vaibhavvaid14/quiz-arena/actions/workflows/tests.yml/badge.svg)](https://github.com/vaibhavvaid14/quiz-arena/actions/workflows/tests.yml)
+
+**[Play it live](https://quiz-arena-uyz6.onrender.com/)** — hosted free, so the
+first request after a quiet spell takes about 30 seconds to wake up.
+
+![The Quiz Arena setup screen, showing the nine topics](docs/screenshot.png)
+
 A timed multiple-choice quiz app backed by a real database. Answers get
 instant feedback and explanations, and there are score analytics, per-player
 history and a shared leaderboard. 210 questions across 9 topics, from
@@ -61,9 +68,10 @@ checks.
 
 ## Deploy it
 
-The repo carries a [render.yaml](render.yaml) blueprint. In the Render
-dashboard choose **New > Blueprint**, pick this repo and apply; Render reads the
-file and builds the service. Nothing needs configuring by hand.
+Already running at <https://quiz-arena-uyz6.onrender.com/>, from the
+[render.yaml](render.yaml) blueprint in this repo. To deploy your own copy: in
+the Render dashboard choose **New > Blueprint**, pick the repo and apply. Render
+reads the file and builds the service; nothing needs configuring by hand.
 
 The start command is `python serve.py --host 0.0.0.0`. `serve.py` takes its
 host, port and database path from `HOST`, `PORT` and `QUIZ_DB` when they are
@@ -215,3 +223,7 @@ don't count.
   the UI falls back to system fonts and everything still works. The
   Content-Security-Policy in `server/app.py` allows exactly those two font
   hosts and nothing else.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).
