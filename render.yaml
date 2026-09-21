@@ -1,0 +1,36 @@
+# Render blueprint (https://render.com/docs/blueprint-spec).
+#
+# To deploy: in the Render dashboard choose New > Blueprint, pick this repo and
+# apply. Render reads this file and creates the service; nothing else to set up.
+#
+# The app needs no packages, so the build step only exists to satisfy the Python
+# runtime. At run time Render supplies PORT, which serve.py reads from the
+# environment; --host 0.0.0.0 is required for the container to accept traffic.
+services:
+  - type: web
+    name: quiz-arena
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python serve.py --host 0.0.0.0
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+
+# Note on the free plan: the filesystem is wiped on every deploy and the service
+# sleeps after ~15 minutes idle, so players, history and the leaderboard reset
+# when it restarts. Questions are re-seeded from data/questions.json each boot,
+# so the quiz itself always works.
+#
+# To keep scores permanently, add a persistent disk and point the database at it:
+#
+#   disk:
+#     name: quiz-data
+#     mountPath: /var/data
+#     sizeGB: 1
+#   envVars:
+#     - key: QUIZ_DB
+#       value: /var/data/quiz.db
+#
+# Disks are a paid feature and also stop the service sleeping.

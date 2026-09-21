@@ -24,6 +24,7 @@ import argparse
 import http.server
 import json
 import mimetypes
+import os
 import pathlib
 import random
 import re
@@ -62,7 +63,11 @@ SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
     "Content-Security-Policy": (
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+        "default-src 'self'; script-src 'self'; "
+        # The UI loads its display fonts from Google Fonts: the stylesheet comes from
+        # fonts.googleapis.com and the font files it points at from fonts.gstatic.com.
+        "style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
         "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'"
     ),
 }
@@ -331,9 +336,15 @@ def prepare_database(db_path, seed_path=seed.DEFAULT_SEED_PATH):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Run Quiz Arena (API + web app).")
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument("--db", default=str(DEFAULT_DB_PATH), help="SQLite database file (default: data/quiz.db)")
+    # Defaults come from the environment first, so a host like Render can supply
+    # PORT (and a writable QUIZ_DB path) without changing the start command.
+    parser.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
+    parser.add_argument(
+        "--db",
+        default=os.environ.get("QUIZ_DB", str(DEFAULT_DB_PATH)),
+        help="SQLite database file (default: $QUIZ_DB, else data/quiz.db)",
+    )
     parser.add_argument("--open", action="store_true", help="open the app in the default browser")
     parser.add_argument(
         "--test", action="store_true", help="use a throwaway database and serve the browser test suite at /tests/"

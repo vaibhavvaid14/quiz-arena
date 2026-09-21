@@ -17,7 +17,7 @@ import { ITEM_STATUS, TIMER_MODES } from '../../core/config.js';
 import { Timer } from '../../core/timer.js';
 import { chip, difficultyChip, timerRing } from '../components.js';
 import { confirmDialog } from '../dialog.js';
-import { focusElement, formatClock, h } from '../dom.js';
+import { focusElement, formatClock, h, richText } from '../dom.js';
 
 const OPTION_KEYS = ['a', 'b', 'c', 'd', 'e', 'f'];
 const LOW_TIME_ANNOUNCE_MS = 5000;
@@ -191,7 +191,7 @@ export function renderQuizScreen(root, ctx, { state: initialState }) {
     const { question } = current;
     const topic = ctx.getTopic(question.topic);
     topicChipSlot.replaceChildren(chip(`${topic?.icon ?? ''} ${topic?.name ?? question.topic}`.trim()), difficultyChip(question.difficulty));
-    questionText.textContent = question.prompt;
+    questionText.replaceChildren(...richText(question.prompt));
     codeBlock.hidden = !question.code;
     codeBlock.firstChild.textContent = question.code ?? '';
 
@@ -252,7 +252,7 @@ export function renderQuizScreen(root, ctx, { state: initialState }) {
           h('span', { class: 'feedback-points' }, pointsText),
         ),
         current.status === ITEM_STATUS.CORRECT ? null : h('p', { class: 'feedback-answer' }, 'Correct answer: ', h('strong', {}, correctText)),
-        h('p', { class: 'feedback-explanation' }, current.explanation),
+        h('p', { class: 'feedback-explanation' }, ...richText(current.explanation)),
       ).childNodes,
     );
 

@@ -6,7 +6,7 @@
 
 import { END_REASONS, ITEM_STATUS } from '../../core/config.js';
 import { accuracyBars, chip, difficultyChip, emptyState, loadingState, scoreRing, statTile, statusPill } from '../components.js';
-import { formatDate, formatDuration, h } from '../dom.js';
+import { formatDate, formatDuration, h, richText } from '../dom.js';
 
 const END_REASON_NOTES = {
   [END_REASONS.TIME_UP]: "Time ran out, so the quiz was submitted automatically. Questions you didn't reach are marked as skipped.",
@@ -193,7 +193,7 @@ function reviewCard(entry, ctx) {
       h('span', { class: 'review-spacer' }),
       statusPill(entry.status),
     ),
-    h('h3', { class: 'review-question' }, entry.question),
+    h('h3', { class: 'review-question' }, ...richText(entry.question)),
     entry.code ? h('pre', { class: 'code-block' }, h('code', {}, entry.code)) : null,
     h(
       'ul',
@@ -208,7 +208,7 @@ function reviewCard(entry, ctx) {
         ),
       ),
     ),
-    h('p', { class: 'review-explanation' }, h('strong', {}, 'Why: '), entry.explanation),
+    h('p', { class: 'review-explanation' }, h('strong', {}, 'Why: '), ...richText(entry.explanation)),
     h('p', { class: 'review-meta' }, `${formatDuration(entry.timeSpentMs)} · ${entry.points > 0 ? '+' : ''}${entry.points} pts`),
   );
   return { el, status: entry.status };

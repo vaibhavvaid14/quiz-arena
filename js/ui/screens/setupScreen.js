@@ -12,7 +12,7 @@ import {
   TIMER_MODES,
 } from '../../core/config.js';
 import { confirmDialog } from '../dialog.js';
-import { formatClock, h } from '../dom.js';
+import { formatClock, h, richText } from '../dom.js';
 
 const TIMER_MODE_OPTIONS = [
   { value: TIMER_MODES.QUESTION, label: 'Per question', hint: 'A fresh countdown for every question. Faster answers earn a speed bonus.' },
@@ -220,10 +220,10 @@ export function renderSetupScreen(root, ctx) {
       topicCountEls.set(topic.id, count);
       return h(
         'label',
-        { class: 'topic-card' },
+        { class: 'topic-card', dataset: { topic: topic.id } },
         input,
         h('span', { class: 'topic-icon', attrs: { 'aria-hidden': 'true' } }, topic.icon),
-        h('span', { class: 'topic-body' }, h('span', { class: 'topic-name' }, topic.name), h('span', { class: 'topic-desc' }, topic.description), count),
+        h('span', { class: 'topic-body' }, h('span', { class: 'topic-name' }, topic.name), h('span', { class: 'topic-desc' }, ...richText(topic.description)), count),
         h('span', { class: 'topic-check', attrs: { 'aria-hidden': 'true' } }, '✓'),
       );
     }),

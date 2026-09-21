@@ -7,7 +7,7 @@ import tempfile
 import threading
 import unittest
 
-from server import app
+from server import app, seed
 from server.tests import helpers
 
 
@@ -60,8 +60,9 @@ class ApiTests(ApiTestCase):
 
         status, catalog, _ = self.request("GET", "/api/catalog")
         self.assertEqual(status, 200)
-        self.assertEqual(len(catalog["topics"]), 6)
-        self.assertEqual(sum(sum(t["counts"].values()) for t in catalog["topics"]), 120)
+        bank = seed.load_bank()  # derived, so adding topics or questions does not break this
+        self.assertEqual(len(catalog["topics"]), len(bank["topics"]))
+        self.assertEqual(sum(sum(t["counts"].values()) for t in catalog["topics"]), len(bank["questions"]))
         self.assertEqual(catalog["rules"]["difficultyPoints"]["hard"], 30)
 
     def test_full_quiz_over_http(self):

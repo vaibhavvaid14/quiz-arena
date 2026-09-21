@@ -36,6 +36,24 @@
       "name": "Math & Logic",
       "icon": "🧮",
       "description": "Arithmetic, algebra, geometry, probability, and reasoning puzzles."
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "icon": "🐍",
+      "description": "Syntax, data structures, comprehensions, generators and the object model."
+    },
+    {
+      "id": "history",
+      "name": "World History",
+      "icon": "🏛️",
+      "description": "Empires, revolutions, treaties and the turning points that shaped the world."
+    },
+    {
+      "id": "movies",
+      "name": "Movies & TV",
+      "icon": "🎬",
+      "description": "Directors, classics, blockbusters and the small screen's biggest hits."
     }
   ],
   "questions": [
@@ -1729,6 +1747,1274 @@
       ],
       "answer": 2,
       "explanation": "P(no six) = (5/6)^4 = 625/1296, so P(at least one six) = 1 − 625/1296 = 671/1296 ≈ 0.518; 4 × 1/6 = 2/3 wrongly adds overlapping events."
+    },
+    {
+      "id": "py-e01",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "Which keyword starts a function definition in Python?",
+      "options": [
+        "def",
+        "func",
+        "function",
+        "lambda"
+      ],
+      "answer": 0,
+      "explanation": "`def name(args):` defines a named function. `lambda` also makes a function, but only a single-expression anonymous one."
+    },
+    {
+      "id": "py-e02",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "What does this print?",
+      "code": "print(len(\"hello\"))",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "An error"
+      ],
+      "answer": 1,
+      "explanation": "`len()` counts the characters in a string. \"hello\" has five."
+    },
+    {
+      "id": "py-e03",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "Which of these built-in types is immutable?",
+      "options": [
+        "list",
+        "dict",
+        "tuple",
+        "set"
+      ],
+      "answer": 2,
+      "explanation": "A tuple cannot be changed after creation. Lists, dicts and sets are all mutable, which is also why tuples can be dict keys and lists cannot."
+    },
+    {
+      "id": "py-e04",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "What does this print?",
+      "code": "print(type(3.0))",
+      "options": [
+        "<class 'int'>",
+        "<class 'double'>",
+        "<class 'decimal'>",
+        "<class 'float'>"
+      ],
+      "answer": 3,
+      "explanation": "A literal with a decimal point is a `float`. Python has no separate `double` type; its float is already a 64-bit double."
+    },
+    {
+      "id": "py-e05",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "Which character begins a single-line comment?",
+      "options": [
+        "#",
+        "//",
+        "--",
+        "/*"
+      ],
+      "answer": 0,
+      "explanation": "Everything after `#` on a line is ignored. Python has no block-comment syntax; a triple-quoted string is sometimes used instead, but it is really a string."
+    },
+    {
+      "id": "py-e06",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "What does `list(range(5))` produce?",
+      "options": [
+        "[1, 2, 3, 4, 5]",
+        "[0, 1, 2, 3, 4]",
+        "[0, 1, 2, 3, 4, 5]",
+        "[5]"
+      ],
+      "answer": 1,
+      "explanation": "`range(stop)` starts at 0 and stops *before* the value given, so `range(5)` yields 0 through 4."
+    },
+    {
+      "id": "py-e07",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "Which built-in function reads a line of text typed by the user?",
+      "options": [
+        "read()",
+        "scan()",
+        "input()",
+        "prompt()"
+      ],
+      "answer": 2,
+      "explanation": "`input()` reads one line from standard input and always returns it as a string, so numbers need converting with `int()` or `float()`."
+    },
+    {
+      "id": "py-e08",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "Which list method adds one item to the end?",
+      "options": [
+        "add()",
+        "push()",
+        "insert()",
+        "append()"
+      ],
+      "answer": 3,
+      "explanation": "`append(x)` adds a single item at the end. `extend()` adds every item of an iterable, and `insert(i, x)` places one at a chosen index."
+    },
+    {
+      "id": "py-e09",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "What is the value of `7 // 2`?",
+      "options": [
+        "3",
+        "3.5",
+        "4",
+        "1"
+      ],
+      "answer": 0,
+      "explanation": "`//` is floor division, which discards the fractional part. `7 / 2` would give 3.5 and `7 % 2` gives the remainder, 1."
+    },
+    {
+      "id": "py-e10",
+      "topic": "python",
+      "difficulty": "easy",
+      "question": "Which keyword defines a class?",
+      "options": [
+        "struct",
+        "class",
+        "object",
+        "type"
+      ],
+      "answer": 1,
+      "explanation": "`class Name:` defines a class. `object` is the base class every class inherits from, and `type` is the class of classes."
+    },
+    {
+      "id": "py-m01",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "What does this list comprehension produce?",
+      "code": "[x * 2 for x in range(4) if x % 2 == 0]",
+      "options": [
+        "[0, 2, 4, 6]",
+        "[2, 6]",
+        "[0, 4]",
+        "[0, 2]"
+      ],
+      "answer": 2,
+      "explanation": "The filter keeps only the even values 0 and 2, and each is then doubled, giving [0, 4]."
+    },
+    {
+      "id": "py-m02",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "What is the difference between `is` and `==`?",
+      "options": [
+        "`is` compares values, `==` compares identity",
+        "They are interchangeable",
+        "`is` only works on numbers",
+        "`is` compares identity, `==` compares values"
+      ],
+      "answer": 3,
+      "explanation": "`is` asks whether two names point to the very same object; `==` asks whether they are equal in value. Use `is` for `None`, and `==` for almost everything else."
+    },
+    {
+      "id": "py-m03",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "In a function signature, what does `*args` collect?",
+      "options": [
+        "Extra positional arguments, as a tuple",
+        "Extra keyword arguments, as a dict",
+        "A pointer to the argument list",
+        "Only arguments with default values"
+      ],
+      "answer": 0,
+      "explanation": "`*args` gathers any leftover positional arguments into a tuple. `**kwargs` is the keyword equivalent and gathers them into a dict."
+    },
+    {
+      "id": "py-m04",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "What does this print?",
+      "code": "print(\"5\" * 3)",
+      "options": [
+        "15",
+        "555",
+        "5 5 5",
+        "A TypeError"
+      ],
+      "answer": 1,
+      "explanation": "Multiplying a string by an integer repeats it. To get 15 you would need `int(\"5\") * 3`."
+    },
+    {
+      "id": "py-m05",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "Why is a mutable default argument a classic bug?",
+      "code": "def add(item, bucket=[]):\n    bucket.append(item)\n    return bucket",
+      "options": [
+        "The default is re-created on every call",
+        "Lists are not allowed as defaults",
+        "The default is created once and shared by every call",
+        "It raises a SyntaxError"
+      ],
+      "answer": 2,
+      "explanation": "Default values are evaluated once, when the function is defined, so every call that omits `bucket` mutates the same list. The fix is `bucket=None` and creating a new list inside."
+    },
+    {
+      "id": "py-m06",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "How does `d.get(\"missing\")` differ from `d[\"missing\"]`?",
+      "options": [
+        "`get` raises KeyError, `[]` returns None",
+        "Both raise KeyError",
+        "Both return None",
+        "`get` returns None, `[]` raises KeyError"
+      ],
+      "answer": 3,
+      "explanation": "`get` returns `None` (or a second argument you supply) for an absent key, while subscripting raises `KeyError`."
+    },
+    {
+      "id": "py-m07",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "What does the `with` statement guarantee when opening a file?",
+      "options": [
+        "The file is closed when the block exits, even on an exception",
+        "The file is read entirely into memory",
+        "The file is locked against other processes",
+        "The file is created if it does not exist"
+      ],
+      "answer": 0,
+      "explanation": "`with` uses the context-manager protocol: `__exit__` runs on the way out of the block whether it finished normally or raised, so the handle is always released."
+    },
+    {
+      "id": "py-m08",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "What does this slice produce?",
+      "code": "[1, 2, 3, 4, 5][1:4]",
+      "options": [
+        "[1, 2, 3, 4]",
+        "[2, 3, 4]",
+        "[2, 3, 4, 5]",
+        "[1, 2, 3]"
+      ],
+      "answer": 1,
+      "explanation": "A slice includes the start index and excludes the stop index, so positions 1, 2 and 3 are taken."
+    },
+    {
+      "id": "py-m09",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "What does `enumerate()` yield on each iteration?",
+      "options": [
+        "Just the item",
+        "A (item, index) pair",
+        "A (index, item) pair",
+        "The item repeated twice"
+      ],
+      "answer": 2,
+      "explanation": "`for i, value in enumerate(seq)` gives the index first, then the item. A `start=` argument shifts where the counting begins."
+    },
+    {
+      "id": "py-m10",
+      "topic": "python",
+      "difficulty": "medium",
+      "question": "What is the result of `{1, 2} | {2, 3}`?",
+      "options": [
+        "{2}",
+        "{1, 3}",
+        "{1, 2, 2, 3}",
+        "{1, 2, 3}"
+      ],
+      "answer": 3,
+      "explanation": "`|` is set union, which keeps every distinct member. `&` would give the intersection {2} and `^` the symmetric difference {1, 3}."
+    },
+    {
+      "id": "py-h01",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "What does the Global Interpreter Lock (GIL) in CPython prevent?",
+      "options": [
+        "Two threads from executing Python bytecode at the same time",
+        "Any use of threads at all",
+        "Multiple processes from running together",
+        "Garbage collection during I/O"
+      ],
+      "answer": 0,
+      "explanation": "Only one thread runs Python bytecode at a time, so threads do not speed up CPU-bound work. They still help with I/O, since the GIL is released while waiting, and `multiprocessing` sidesteps it entirely."
+    },
+    {
+      "id": "py-h02",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "What does this print?",
+      "code": "def shout(fn):\n    def wrapper():\n        return \"[\" + fn() + \"]\"\n    return wrapper\n\n@shout\ndef greet():\n    return \"hi\"\n\nprint(greet())",
+      "options": [
+        "hi",
+        "[hi]",
+        "wrapper",
+        "A TypeError"
+      ],
+      "answer": 1,
+      "explanation": "The decorator replaces `greet` with `wrapper`, so calling it runs the original and wraps the result. `@shout` is just `greet = shout(greet)`."
+    },
+    {
+      "id": "py-h03",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "How does a generator function differ from one that returns a list?",
+      "options": [
+        "It runs faster but uses more memory",
+        "It can only be iterated over with a while loop",
+        "It produces values lazily, one at a time, and keeps its state between them",
+        "It must return a tuple"
+      ],
+      "answer": 2,
+      "explanation": "`yield` suspends the function and resumes where it left off, so nothing is computed until asked for. That makes generators cheap in memory and able to model infinite sequences."
+    },
+    {
+      "id": "py-h04",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "What is the main effect of defining `__slots__` on a class?",
+      "options": [
+        "It makes every attribute read-only",
+        "It automatically generates `__init__`",
+        "It makes the class hashable",
+        "It removes the per-instance `__dict__`, cutting memory use"
+      ],
+      "answer": 3,
+      "explanation": "`__slots__` fixes the attribute names in advance so instances need no dictionary. The saving matters when you make very many small objects, but it blocks adding new attributes at runtime."
+    },
+    {
+      "id": "py-h05",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "What does this print?",
+      "code": "fns = [lambda: i for i in range(3)]\nprint([f() for f in fns])",
+      "options": [
+        "[2, 2, 2]",
+        "[0, 1, 2]",
+        "[0, 0, 0]",
+        "[3, 3, 3]"
+      ],
+      "answer": 0,
+      "explanation": "The closures capture the variable `i`, not its value at the time. By the time they are called the loop has finished and `i` is 2. A default argument, `lambda i=i: i`, captures the value instead."
+    },
+    {
+      "id": "py-h06",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "What does `super()` use to decide which class to delegate to?",
+      "options": [
+        "The first base class listed",
+        "The method resolution order (MRO) of the instance's type",
+        "The most recently defined class",
+        "Whichever base defines the method"
+      ],
+      "answer": 1,
+      "explanation": "`super()` walks the C3-linearised MRO, which is why cooperative multiple inheritance works: the next class is chosen by the actual instance's type, not by where the call is written."
+    },
+    {
+      "id": "py-h07",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "What is the difference between `copy.copy` and `copy.deepcopy`?",
+      "options": [
+        "Shallow is for lists, deep is for dicts",
+        "Deep copy is always faster",
+        "Shallow copies the outer object only; deep copies nested objects too",
+        "There is none; they are aliases"
+      ],
+      "answer": 2,
+      "explanation": "A shallow copy makes a new container whose elements are still the same objects, so mutating a nested list shows through. `deepcopy` recursively copies the whole graph, tracking cycles as it goes."
+    },
+    {
+      "id": "py-h08",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "Why guard code with `if __name__ == \"__main__\":`?",
+      "options": [
+        "It makes the module run faster",
+        "It is required for any script",
+        "It marks the module as executable on disk",
+        "It stops the code running when the module is imported"
+      ],
+      "answer": 3,
+      "explanation": "`__name__` is `\"__main__\"` only for the file run directly; an imported module gets its own name instead. The guard keeps script behaviour from firing on import."
+    },
+    {
+      "id": "py-h09",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "When does the `else` block of a `try` statement run?",
+      "options": [
+        "Only if no exception was raised in the `try` block",
+        "Always, like `finally`",
+        "Only if an exception was raised",
+        "Only if the exception was re-raised"
+      ],
+      "answer": 0,
+      "explanation": "`else` runs when the `try` block completed without raising, which lets you keep the risky line alone in `try` and the follow-up work out of the handler's reach."
+    },
+    {
+      "id": "py-h10",
+      "topic": "python",
+      "difficulty": "hard",
+      "question": "What does `@functools.lru_cache` do to a function?",
+      "options": [
+        "Runs it in a background thread",
+        "Remembers results per argument set and replays them",
+        "Limits how often it may be called",
+        "Makes it thread-unsafe"
+      ],
+      "answer": 1,
+      "explanation": "It memoises: arguments are used as a cache key, so a repeat call returns the stored result. Arguments must be hashable, and the cache is bounded by `maxsize` on a least-recently-used policy."
+    },
+    {
+      "id": "hist-e01",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "In which year did the Second World War end?",
+      "options": [
+        "1918",
+        "1939",
+        "1945",
+        "1950"
+      ],
+      "answer": 2,
+      "explanation": "Germany surrendered in May 1945 and Japan in September 1945. 1939 was the year the war began in Europe, and 1918 ended the First World War."
+    },
+    {
+      "id": "hist-e02",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "Who was the first President of the United States?",
+      "options": [
+        "George Washington",
+        "Thomas Jefferson",
+        "Benjamin Franklin",
+        "John Adams"
+      ],
+      "answer": 0,
+      "explanation": "Washington took office in 1789. Adams was his vice-president and successor; Franklin, despite his fame, was never president."
+    },
+    {
+      "id": "hist-e03",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "Which ancient civilisation built the pyramids at Giza?",
+      "options": [
+        "The Sumerians",
+        "The Maya",
+        "The Persians",
+        "The Egyptians"
+      ],
+      "answer": 3,
+      "explanation": "The Giza pyramids were raised as royal tombs during Egypt's Old Kingdom, around 2600-2500 BCE."
+    },
+    {
+      "id": "hist-e04",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "In which year did the Berlin Wall fall?",
+      "options": [
+        "1961",
+        "1975",
+        "1989",
+        "1991"
+      ],
+      "answer": 2,
+      "explanation": "The crossings opened on 9 November 1989. The wall had gone up in 1961, and the Soviet Union itself dissolved in 1991."
+    },
+    {
+      "id": "hist-e05",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "Who was the first person to walk on the Moon?",
+      "options": [
+        "Neil Armstrong",
+        "Buzz Aldrin",
+        "Yuri Gagarin",
+        "Michael Collins"
+      ],
+      "answer": 0,
+      "explanation": "Armstrong stepped out first on 20 July 1969, with Aldrin following. Gagarin was the first human in space, in 1961."
+    },
+    {
+      "id": "hist-e06",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "Julius Caesar was a leader of which empire?",
+      "options": [
+        "The Greek",
+        "The Ottoman",
+        "The Mongol",
+        "The Roman"
+      ],
+      "answer": 3,
+      "explanation": "Caesar was a Roman general and dictator, assassinated in 44 BCE. His heir Augustus turned the republic into an empire."
+    },
+    {
+      "id": "hist-e07",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "In which year did the Titanic sink?",
+      "options": [
+        "1905",
+        "1912",
+        "1920",
+        "1931"
+      ],
+      "answer": 1,
+      "explanation": "She struck an iceberg on her maiden voyage and sank in the early hours of 15 April 1912."
+    },
+    {
+      "id": "hist-e08",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "Who was the principal author of the American Declaration of Independence?",
+      "options": [
+        "Thomas Jefferson",
+        "George Washington",
+        "Alexander Hamilton",
+        "James Madison"
+      ],
+      "answer": 0,
+      "explanation": "Jefferson wrote the draft in 1776, which the Continental Congress then edited. Madison later did the same service for the Constitution."
+    },
+    {
+      "id": "hist-e09",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "Mahatma Gandhi led the independence movement of which country?",
+      "options": [
+        "South Africa",
+        "Indonesia",
+        "India",
+        "Egypt"
+      ],
+      "answer": 2,
+      "explanation": "Gandhi led India's non-violent struggle against British rule, which ended with independence in 1947. He had earlier spent two decades organising in South Africa."
+    },
+    {
+      "id": "hist-e10",
+      "topic": "history",
+      "difficulty": "easy",
+      "question": "The American Civil War was fought between which two sides?",
+      "options": [
+        "Britain and the colonies",
+        "The North and Mexico",
+        "Settlers and France",
+        "The Union and the Confederacy"
+      ],
+      "answer": 3,
+      "explanation": "Fought from 1861 to 1865 between the northern Union and the eleven southern states that seceded as the Confederacy, over slavery and its expansion."
+    },
+    {
+      "id": "hist-m01",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "In which year was Magna Carta sealed?",
+      "options": [
+        "1066",
+        "1215",
+        "1348",
+        "1485"
+      ],
+      "answer": 1,
+      "explanation": "King John sealed it at Runnymede in 1215 under pressure from rebel barons. It is remembered for the principle that the king is not above the law."
+    },
+    {
+      "id": "hist-m02",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "The French Revolution began in which year?",
+      "options": [
+        "1776",
+        "1789",
+        "1799",
+        "1804"
+      ],
+      "answer": 1,
+      "explanation": "The Bastille was stormed on 14 July 1789. Napoleon's coup came in 1799 and he crowned himself emperor in 1804."
+    },
+    {
+      "id": "hist-m03",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "Who was the first emperor of a unified China?",
+      "options": [
+        "Qin Shi Huang",
+        "Kublai Khan",
+        "Sun Yat-sen",
+        "Emperor Wu of Han"
+      ],
+      "answer": 0,
+      "explanation": "Qin Shi Huang unified the warring states in 221 BCE, standardised writing and measures, and was buried with the Terracotta Army."
+    },
+    {
+      "id": "hist-m04",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "In which country did the Renaissance begin?",
+      "options": [
+        "France",
+        "England",
+        "Italy",
+        "Germany"
+      ],
+      "answer": 2,
+      "explanation": "It started in the Italian city-states, Florence above all, in the 14th century, before spreading north over the next two hundred years."
+    },
+    {
+      "id": "hist-m05",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "Which treaty formally ended the First World War with Germany?",
+      "options": [
+        "The Treaty of Ghent",
+        "The Peace of Westphalia",
+        "The Treaty of Utrecht",
+        "The Treaty of Versailles"
+      ],
+      "answer": 3,
+      "explanation": "Signed in 1919, it imposed reparations and territorial losses on Germany. Its severity is often cited among the causes of the next war."
+    },
+    {
+      "id": "hist-m06",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "In which year did Columbus first reach the Americas?",
+      "options": [
+        "1453",
+        "1492",
+        "1519",
+        "1588"
+      ],
+      "answer": 1,
+      "explanation": "He made landfall in the Bahamas in October 1492. Constantinople had fallen in 1453, and Magellan's voyage set out in 1519."
+    },
+    {
+      "id": "hist-m07",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "In which country did the Industrial Revolution begin?",
+      "options": [
+        "Britain",
+        "The United States",
+        "Belgium",
+        "France"
+      ],
+      "answer": 0,
+      "explanation": "It began in Britain in the late 18th century, powered by coal, steam and the textile mills, before spreading across Europe and North America."
+    },
+    {
+      "id": "hist-m08",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "Which empire captured Constantinople in 1453?",
+      "options": [
+        "The Mongol",
+        "The Persian",
+        "The Ottoman",
+        "The Austrian"
+      ],
+      "answer": 2,
+      "explanation": "Mehmed II took the city, ending the Byzantine Empire. Renamed Istanbul, it became the Ottoman capital."
+    },
+    {
+      "id": "hist-m09",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "Which Indian emperor renounced war after the Kalinga campaign?",
+      "options": [
+        "Chandragupta Maurya",
+        "Akbar",
+        "Harsha",
+        "Ashoka"
+      ],
+      "answer": 3,
+      "explanation": "Appalled by the slaughter at Kalinga around 261 BCE, Ashoka turned to Buddhism and had edicts on non-violence carved on pillars across his empire."
+    },
+    {
+      "id": "hist-m10",
+      "topic": "history",
+      "difficulty": "medium",
+      "question": "The Cold War was primarily a rivalry between which two powers?",
+      "options": [
+        "The United States and the Soviet Union",
+        "Britain and France",
+        "China and Japan",
+        "Germany and Russia"
+      ],
+      "answer": 0,
+      "explanation": "From 1947 to 1991 the two superpowers competed through arms races, space races and proxy wars, without ever fighting each other directly."
+    },
+    {
+      "id": "hist-h01",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "The Peace of Westphalia in 1648 ended which conflict?",
+      "options": [
+        "The Hundred Years' War",
+        "The War of the Roses",
+        "The Thirty Years' War",
+        "The Napoleonic Wars"
+      ],
+      "answer": 2,
+      "explanation": "It closed the Thirty Years' War and is often taken as the origin of the modern system of sovereign states."
+    },
+    {
+      "id": "hist-h02",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "Which Byzantine emperor ordered the great codification of Roman law?",
+      "options": [
+        "Constantine I",
+        "Heraclius",
+        "Basil II",
+        "Justinian I"
+      ],
+      "answer": 3,
+      "explanation": "The Corpus Juris Civilis was compiled under Justinian in the 6th century. It became the foundation of civil law across much of Europe."
+    },
+    {
+      "id": "hist-h03",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "The Meiji Restoration of 1868 transformed which country?",
+      "options": [
+        "Japan",
+        "China",
+        "Korea",
+        "Thailand"
+      ],
+      "answer": 0,
+      "explanation": "It ended the Tokugawa shogunate, restored imperial rule and launched the rapid industrialisation that made Japan a modern power within a generation."
+    },
+    {
+      "id": "hist-h04",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "In which year was the Battle of Hastings fought?",
+      "options": [
+        "1016",
+        "1066",
+        "1215",
+        "1314"
+      ],
+      "answer": 1,
+      "explanation": "William of Normandy defeated Harold II in 1066, beginning the Norman conquest of England."
+    },
+    {
+      "id": "hist-h05",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "Which 1884-85 conference set the rules for European partition of Africa?",
+      "options": [
+        "The Congress of Vienna",
+        "The Berlin Conference",
+        "The Yalta Conference",
+        "The Congress of Paris"
+      ],
+      "answer": 1,
+      "explanation": "Convened by Bismarck, it let European powers formalise claims on African territory with no African representation, accelerating the Scramble for Africa."
+    },
+    {
+      "id": "hist-h06",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "The Rosetta Stone was the key to deciphering which writing system?",
+      "options": [
+        "Cuneiform",
+        "Linear B",
+        "Egyptian hieroglyphs",
+        "Mayan glyphs"
+      ],
+      "answer": 2,
+      "explanation": "Its parallel Greek text let Champollion crack hieroglyphs in 1822. Linear B fell to Michael Ventris only in 1952."
+    },
+    {
+      "id": "hist-h07",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "Who led the revolution that made Haiti independent?",
+      "options": [
+        "Simon Bolivar",
+        "Jose de San Martin",
+        "Emiliano Zapata",
+        "Toussaint Louverture"
+      ],
+      "answer": 3,
+      "explanation": "Louverture led the only successful large-scale slave revolt in history. Haiti declared independence in 1804, shortly after his death in a French prison."
+    },
+    {
+      "id": "hist-h08",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "The Hundred Years' War was fought between which two kingdoms?",
+      "options": [
+        "England and France",
+        "Spain and Portugal",
+        "Austria and Prussia",
+        "Sweden and Poland"
+      ],
+      "answer": 0,
+      "explanation": "It ran from 1337 to 1453 over claims to the French throne, and produced figures such as Joan of Arc."
+    },
+    {
+      "id": "hist-h09",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "In which year was Sputnik 1, the first artificial satellite, launched?",
+      "options": [
+        "1949",
+        "1957",
+        "1961",
+        "1969"
+      ],
+      "answer": 1,
+      "explanation": "The Soviet Union launched it in October 1957, starting the space race. Gagarin's flight followed in 1961."
+    },
+    {
+      "id": "hist-h10",
+      "topic": "history",
+      "difficulty": "hard",
+      "question": "The 1494 Treaty of Tordesillas divided newly encountered lands between which two powers?",
+      "options": [
+        "England and France",
+        "Spain and Portugal",
+        "The Netherlands and Spain",
+        "Portugal and France"
+      ],
+      "answer": 1,
+      "explanation": "A papal-brokered meridian split the claims, which is why Brazil fell on the Portuguese side and most of the rest of the Americas on the Spanish one."
+    },
+    {
+      "id": "mov-e01",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "In which film does Leonardo DiCaprio play Jack Dawson?",
+      "options": [
+        "Titanic",
+        "Inception",
+        "The Revenant",
+        "Catch Me If You Can"
+      ],
+      "answer": 0,
+      "explanation": "Jack is the young artist who wins his ticket in a card game in Titanic (1997)."
+    },
+    {
+      "id": "mov-e02",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "Who directed Jurassic Park (1993)?",
+      "options": [
+        "James Cameron",
+        "Steven Spielberg",
+        "Ridley Scott",
+        "George Lucas"
+      ],
+      "answer": 1,
+      "explanation": "Spielberg directed it, and its blend of animatronics and early CGI reset expectations for visual effects."
+    },
+    {
+      "id": "mov-e03",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "In The Lion King, what is the name of Simba's father?",
+      "options": [
+        "Scar",
+        "Rafiki",
+        "Mufasa",
+        "Zazu"
+      ],
+      "answer": 2,
+      "explanation": "Mufasa is the king whose death at his brother Scar's hands drives the story."
+    },
+    {
+      "id": "mov-e04",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "Which studio made Toy Story (1995)?",
+      "options": [
+        "DreamWorks",
+        "Studio Ghibli",
+        "Illumination",
+        "Pixar"
+      ],
+      "answer": 3,
+      "explanation": "Pixar made it, and it was the first feature film animated entirely by computer."
+    },
+    {
+      "id": "mov-e05",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "What is the name of the wizarding school in the Harry Potter films?",
+      "options": [
+        "Hogwarts",
+        "Durmstrang",
+        "Beauxbatons",
+        "Ilvermorny"
+      ],
+      "answer": 0,
+      "explanation": "Hogwarts School of Witchcraft and Wizardry. The other three are real schools in the same fictional world."
+    },
+    {
+      "id": "mov-e06",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "Which film trilogy centres on destroying the One Ring?",
+      "options": [
+        "The Chronicles of Narnia",
+        "The Lord of the Rings",
+        "The Hobbit",
+        "His Dark Materials"
+      ],
+      "answer": 1,
+      "explanation": "Peter Jackson's Lord of the Rings trilogy (2001-2003), adapted from Tolkien."
+    },
+    {
+      "id": "mov-e07",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "Which actor played Tony Stark in the Marvel Cinematic Universe?",
+      "options": [
+        "Chris Evans",
+        "Mark Ruffalo",
+        "Robert Downey Jr.",
+        "Chris Hemsworth"
+      ],
+      "answer": 2,
+      "explanation": "Downey played Iron Man from 2008's Iron Man through Avengers: Endgame."
+    },
+    {
+      "id": "mov-e08",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "Which TV series is set in the fictional town of Hawkins, Indiana?",
+      "options": [
+        "Twin Peaks",
+        "Riverdale",
+        "Dark",
+        "Stranger Things"
+      ],
+      "answer": 3,
+      "explanation": "Stranger Things, whose 1980s Hawkins sits above a parallel dimension called the Upside Down."
+    },
+    {
+      "id": "mov-e09",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "In The Matrix, which pill does Neo take?",
+      "options": [
+        "The red one",
+        "The blue one",
+        "Neither",
+        "Both"
+      ],
+      "answer": 0,
+      "explanation": "The red pill reveals the simulation; the blue one would have returned him to it."
+    },
+    {
+      "id": "mov-e10",
+      "topic": "movies",
+      "difficulty": "easy",
+      "question": "Which animated film features the sisters Elsa and Anna?",
+      "options": [
+        "Tangled",
+        "Frozen",
+        "Moana",
+        "Encanto"
+      ],
+      "answer": 1,
+      "explanation": "Frozen (2013), loosely based on Hans Christian Andersen's The Snow Queen."
+    },
+    {
+      "id": "mov-m01",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "Who directed Inception (2010)?",
+      "options": [
+        "Denis Villeneuve",
+        "David Fincher",
+        "Christopher Nolan",
+        "Darren Aronofsky"
+      ],
+      "answer": 2,
+      "explanation": "Nolan wrote and directed it. Its nested dream layers run at different speeds, which is why a fall upstairs takes so long to land."
+    },
+    {
+      "id": "mov-m02",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "Which film was the first non-English-language winner of the Best Picture Oscar?",
+      "options": [
+        "Roma",
+        "Crouching Tiger, Hidden Dragon",
+        "Life Is Beautiful",
+        "Parasite"
+      ],
+      "answer": 3,
+      "explanation": "Bong Joon-ho's Parasite won in 2020, taking Best Picture, Director, Original Screenplay and International Feature in one night."
+    },
+    {
+      "id": "mov-m03",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "What is the name of the fictional nation in Black Panther?",
+      "options": [
+        "Wakanda",
+        "Genosha",
+        "Latveria",
+        "Sokovia"
+      ],
+      "answer": 0,
+      "explanation": "Wakanda, hidden and technologically advanced thanks to its vibranium deposits."
+    },
+    {
+      "id": "mov-m04",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "Which sitcom follows Ross, Rachel, Monica, Chandler, Joey and Phoebe?",
+      "options": [
+        "How I Met Your Mother",
+        "Friends",
+        "Seinfeld",
+        "New Girl"
+      ],
+      "answer": 1,
+      "explanation": "Friends ran for ten seasons from 1994 to 2004."
+    },
+    {
+      "id": "mov-m05",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "Who composed the scores for Star Wars, Jaws and Indiana Jones?",
+      "options": [
+        "Hans Zimmer",
+        "Ennio Morricone",
+        "John Williams",
+        "Howard Shore"
+      ],
+      "answer": 2,
+      "explanation": "John Williams, whose run of leitmotif-driven scores for Spielberg and Lucas defined the sound of the modern blockbuster."
+    },
+    {
+      "id": "mov-m06",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "In Breaking Bad, what alias does Walter White use?",
+      "options": [
+        "Gus",
+        "Saul",
+        "Ozymandias",
+        "Heisenberg"
+      ],
+      "answer": 3,
+      "explanation": "He takes the name Heisenberg, after the physicist of the uncertainty principle."
+    },
+    {
+      "id": "mov-m07",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "Which 1942 film contains the line \"Here's looking at you, kid\"?",
+      "options": [
+        "Casablanca",
+        "Citizen Kane",
+        "The Maltese Falcon",
+        "Gone with the Wind"
+      ],
+      "answer": 0,
+      "explanation": "Humphrey Bogart says it to Ingrid Bergman in Casablanca."
+    },
+    {
+      "id": "mov-m08",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "Who directed Pulp Fiction (1994)?",
+      "options": [
+        "Martin Scorsese",
+        "Quentin Tarantino",
+        "Guy Ritchie",
+        "Coen brothers"
+      ],
+      "answer": 1,
+      "explanation": "Tarantino directed it, and its out-of-order structure made non-linear storytelling mainstream."
+    },
+    {
+      "id": "mov-m09",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "Game of Thrones was adapted from novels by which author?",
+      "options": [
+        "Brandon Sanderson",
+        "Patrick Rothfuss",
+        "George R. R. Martin",
+        "Robin Hobb"
+      ],
+      "answer": 2,
+      "explanation": "Martin's A Song of Ice and Fire series. The show eventually overtook the unfinished books."
+    },
+    {
+      "id": "mov-m10",
+      "topic": "movies",
+      "difficulty": "medium",
+      "question": "Which 1975 film is usually credited with inventing the summer blockbuster?",
+      "options": [
+        "Star Wars",
+        "The Exorcist",
+        "Rocky",
+        "Jaws"
+      ],
+      "answer": 3,
+      "explanation": "Jaws combined a wide simultaneous release with heavy television advertising, a pattern studios have followed ever since."
+    },
+    {
+      "id": "mov-h01",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "Which film won the very first Best Picture Academy Award?",
+      "options": [
+        "Wings",
+        "Sunrise",
+        "The Jazz Singer",
+        "All Quiet on the Western Front"
+      ],
+      "answer": 0,
+      "explanation": "Wings, a silent war film, won at the first ceremony in 1929 for the 1927-28 season."
+    },
+    {
+      "id": "mov-h02",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "Eleven Academy Awards is the record for one film. Which of these did NOT win that many?",
+      "options": [
+        "Ben-Hur",
+        "Schindler's List",
+        "Titanic",
+        "The Lord of the Rings: The Return of the King"
+      ],
+      "answer": 1,
+      "explanation": "The other three are tied at eleven. Schindler's List won seven."
+    },
+    {
+      "id": "mov-h03",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "Who has won the most Best Director Oscars?",
+      "options": [
+        "Steven Spielberg",
+        "Frank Capra",
+        "John Ford",
+        "William Wyler"
+      ],
+      "answer": 2,
+      "explanation": "John Ford won four. Capra and Wyler took three each, and Spielberg two."
+    },
+    {
+      "id": "mov-h04",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "What is the dying word that sets the plot of Citizen Kane in motion?",
+      "options": [
+        "Xanadu",
+        "Bernstein",
+        "Thatcher",
+        "Rosebud"
+      ],
+      "answer": 3,
+      "explanation": "Kane murmurs \"Rosebud\", and a reporter's hunt for its meaning frames the film. Xanadu is the name of his estate."
+    },
+    {
+      "id": "mov-h05",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "Kurosawa's Seven Samurai was remade as which American western?",
+      "options": [
+        "The Magnificent Seven",
+        "High Noon",
+        "A Fistful of Dollars",
+        "The Wild Bunch"
+      ],
+      "answer": 0,
+      "explanation": "The Magnificent Seven (1960) transplants the story to the old West. A Fistful of Dollars borrowed from a different Kurosawa film, Yojimbo."
+    },
+    {
+      "id": "mov-h06",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "Which performer holds the record for most Best Actress Oscars?",
+      "options": [
+        "Meryl Streep",
+        "Katharine Hepburn",
+        "Bette Davis",
+        "Ingrid Bergman"
+      ],
+      "answer": 1,
+      "explanation": "Hepburn won four. Streep has the most nominations of any performer but three wins."
+    },
+    {
+      "id": "mov-h07",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "What was the first feature-length animated film released by Disney?",
+      "options": [
+        "Fantasia",
+        "Pinocchio",
+        "Snow White and the Seven Dwarfs",
+        "Bambi"
+      ],
+      "answer": 2,
+      "explanation": "Snow White (1937). It was widely expected to fail and became the highest-grossing film of its time."
+    },
+    {
+      "id": "mov-h08",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "In Twin Peaks, whose murder opens the series?",
+      "options": [
+        "Audrey Horne",
+        "Josie Packard",
+        "Maddy Ferguson",
+        "Laura Palmer"
+      ],
+      "answer": 3,
+      "explanation": "Laura Palmer's body is found in the pilot, and the investigation drives the first two seasons."
+    },
+    {
+      "id": "mov-h09",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "Which director made 1917, shot to look like one continuous take?",
+      "options": [
+        "Sam Mendes",
+        "Alejandro Inarritu",
+        "Roger Deakins",
+        "Steve McQueen"
+      ],
+      "answer": 0,
+      "explanation": "Mendes directed it; Roger Deakins shot it and won the cinematography Oscar. Inarritu used a similar illusion earlier in Birdman."
+    },
+    {
+      "id": "mov-h10",
+      "topic": "movies",
+      "difficulty": "hard",
+      "question": "Which television programme has won the most Primetime Emmy Awards?",
+      "options": [
+        "The Simpsons",
+        "Saturday Night Live",
+        "Game of Thrones",
+        "Frasier"
+      ],
+      "answer": 1,
+      "explanation": "Saturday Night Live has won far more than any other programme, helped by running since 1975."
     }
   ]
 }

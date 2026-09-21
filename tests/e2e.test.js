@@ -26,6 +26,23 @@ export async function waitFor(predicate, { timeoutMs = 8000, what = 'condition' 
   }
 }
 
+/**
+ * Guards the regression where a null child got appended instead of skipped, printing the
+ * literal text "null". Such a child becomes a text node of its own, so this checks nodes
+ * rather than the panel's combined text, and skips the two server-supplied spots (the
+ * explanation and the revealed option label), which legitimately read "null" or
+ * "undefined" for questions like js-m01. Returns the offending text node, or null.
+ */
+function strayNullNode(el) {
+  const SERVER_TEXT = '.feedback-explanation, .feedback-answer strong';
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node.parentElement?.closest(SERVER_TEXT)) continue;
+    if (['null', 'undefined', 'false'].includes(node.nodeValue.trim())) return node;
+  }
+  return null;
+}
+
 async function mount({ storage = createStorage(createMemoryBackend()) } = {}) {
   const host = document.createElement('div');
   host.className = 'e2e-host';
@@ -62,7 +79,7 @@ async function mount({ storage = createStorage(createMemoryBackend()) } = {}) {
       $$('.option')[index].click();
       const title = await waitFor(() => $('.feedback-title')?.textContent, { what: 'feedback' });
       // Regression: a null child once rendered as the literal text "null".
-      assert(!/\bnull\b/.test($('.feedback').textContent), `stray "null" in feedback: ${$('.feedback').textContent}`);
+      assert(!strayNullNode($('.feedback')), `stray "null" in feedback: ${$('.feedback').textContent}`);
       return title;
     },
     async next() {

@@ -2,11 +2,13 @@
 
 A timed multiple-choice quiz app backed by a real database. Answers get
 instant feedback and explanations, and there are score analytics, per-player
-history and a shared leaderboard.
+history and a shared leaderboard. 210 questions across 9 topics, from
+JavaScript and Python to world history and film.
 
 - **Backend:** Python 3.10+ standard library only (`http.server` + `sqlite3`).
   A JSON REST API with server-side scoring.
 - **Frontend:** plain HTML, CSS and JavaScript (ES modules). No build step.
+  Display type from Google Fonts, with a system-font fallback offline.
 - **Nothing to install.** If Python runs, the app runs.
 
 ## Run it
@@ -16,7 +18,7 @@ python serve.py --open        # or double-click start.bat on Windows
 ```
 
 Then open <http://127.0.0.1:8000/>. On first start the server creates
-`data/quiz.db`, applies the schema and loads the 120 questions from
+`data/quiz.db`, applies the schema and loads the 210 questions from
 `data/questions.json`. Every later start syncs any edits you've made to that
 file.
 
@@ -57,6 +59,21 @@ chrome --headless=new --virtual-time-budget=90000 --dump-dom http://127.0.0.1:80
 seeds the test database through the API and opens that screen, for visual
 checks.
 
+## Deploy it
+
+The repo carries a [render.yaml](render.yaml) blueprint. In the Render
+dashboard choose **New > Blueprint**, pick this repo and apply; Render reads the
+file and builds the service. Nothing needs configuring by hand.
+
+The start command is `python serve.py --host 0.0.0.0`. `serve.py` takes its
+host, port and database path from `HOST`, `PORT` and `QUIZ_DB` when they are
+set, which is how Render supplies the port it wants.
+
+On the free plan the disk is wiped on every deploy and the service sleeps after
+about fifteen minutes idle, so the first request after a nap takes ~30 seconds
+and scores do not survive a restart. Questions re-seed from
+`data/questions.json` on every boot, so the quiz itself always works.
+`render.yaml` shows the disk and `QUIZ_DB` settings that make scores permanent.
 ## How it works
 
 ```
@@ -128,6 +145,23 @@ Routes marked 🔑 need the `X-Player-Key` header.
 | GET | `/api/attempts/{id}/results` 🔑 | summary and full review |
 | GET | `/api/leaderboard?limit=20` | top players (a valid key also returns your own rank) |
 
+## Topics
+
+210 questions across 9 topics, each with an easy / medium / hard spread and a
+written explanation. A test enforces the spread and keeps the correct answer
+from clustering on one position.
+
+| Topic | Questions | Covers |
+|---|---|---|
+| ⚡ JavaScript | 20 | Types, scope, closures, `this`, and the event loop |
+| 🎨 HTML & CSS | 20 | Markup semantics, the box model, layout, and the cascade |
+| 💻 Computer Science | 20 | Data structures, algorithms, complexity, networking, and OS basics |
+| 🔬 General Science | 20 | Core facts from physics, chemistry, biology, and astronomy |
+| 🌍 World Geography | 20 | Capitals, rivers, seas, and landforms around the globe |
+| 🧮 Math & Logic | 20 | Arithmetic, algebra, geometry, probability, and reasoning puzzles |
+| 🐍 Python | 30 | Syntax, data structures, comprehensions, generators and the object model |
+| 🏛️ World History | 30 | Empires, revolutions, treaties and the turning points that shaped the world |
+| 🎬 Movies & TV | 30 | Directors, classics, blockbusters and the small screen's biggest hits |
 ## Adding questions
 
 Edit `data/questions.json`, then restart the server or run
@@ -174,5 +208,10 @@ don't count.
 - **Single machine only.** SQLite with one server process suits a class or a
   team. For many simultaneous users, move to PostgreSQL behind a production
   WSGI server.
-- **Tested in Chrome.** The app uses ES modules, `<dialog>`, CSS `:has()` and
-  `color-mix()`, all supported by current Chrome, Edge, Firefox and Safari.
+- **Tested in Chrome.** The app uses ES modules, `<dialog>`, CSS `:has()`,
+  `color-mix()` and `backdrop-filter`, all supported by current Chrome, Edge,
+  Firefox and Safari.
+- **Fonts come from Google Fonts.** Offline, or anywhere that host is blocked,
+  the UI falls back to system fonts and everything still works. The
+  Content-Security-Policy in `server/app.py` allows exactly those two font
+  hosts and nothing else.

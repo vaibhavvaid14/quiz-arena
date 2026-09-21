@@ -18,6 +18,22 @@ export function h(tag, props = {}, ...children) {
   return el;
 }
 
+/**
+ * Splits text on paired backticks into strings and <code> elements, ready to
+ * spread into `h()`. Question banks write inline code that way, and rendering it
+ * as markup beats showing the marks. Still text nodes only, so content like
+ * "<div>" stays literal. An unpaired backtick is left as an ordinary character.
+ */
+export function richText(text) {
+  const parts = String(text ?? "").split("`");
+  const nodes = parts.map((part, i) => {
+    if (i % 2 === 0) return part;
+    // Odd pieces sit between two marks, except a trailing one, which never closed.
+    return i < parts.length - 1 ? h("code", {}, part) : "`" + part;
+  });
+  return nodes.filter((node) => node !== "");
+}
+
 /** Same as `h` but in the SVG namespace (attributes only). */
 export function svg(tag, attrs = {}, ...children) {
   const el = document.createElementNS(SVG_NS, tag);

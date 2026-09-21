@@ -1,0 +1,3 @@
+# Quiz Arena runs on the Python standard library alone, so there is nothing to
+# install. This file is kept because hosting platforms (Render, Railway and
+# friends) expect a Python project to have one, and a missing file fails the build.

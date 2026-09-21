@@ -6,97 +6,132 @@
 
 :root {
   color-scheme: light;
-  --page: #f9f9f7;
-  --surface: #fcfcfb;
+  --page: #f5f3ff;
+  --surface: #ffffff;
   --surface-raised: #ffffff;
-  --surface-sunken: #f0efec;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --ink-muted: #6f6d68;
-  --border: rgba(11, 11, 11, 0.1);
-  --border-strong: #c3c2b7;
-  --grid: #e1e0d9;
+  --surface-sunken: #efeafe;
+  --ink: #16123a;
+  --ink-2: #4a4570;
+  --ink-muted: #6f6a92;
+  --border: rgba(22, 18, 58, 0.1);
+  --border-strong: #ddd6f7;
+  --grid: #e7e1fb;
 
-  --accent: #2a78d6;
-  --accent-hover: #256abf;
-  --accent-ink: #1c5cab; /* accent as text on the light surface */
-  --accent-wash: rgba(42, 120, 214, 0.1);
+  --accent: #6c4cf1;
+  --accent-hover: #5a3ae0;
+  --accent-ink: #5433d6; /* accent as text on the light surface */
+  --accent-wash: rgba(108, 76, 241, 0.1);
   --on-accent: #ffffff;
+  --accent-2: #ff5c8a;
+  --accent-3: #ffb020;
 
-  --series: #2a78d6; /* single-series bars and rings */
+  --series: #6c4cf1; /* single-series bars and rings */
 
-  --good: #0ca30c;
-  --good-ink: #006300;
-  --good-wash: rgba(12, 163, 12, 0.1);
-  --critical: #d03b3b;
-  --critical-ink: #b02a2a;
-  --critical-wash: rgba(208, 59, 59, 0.09);
-  --warning: #fab219;
-  --warning-ink: #7a5200;
-  --warning-wash: rgba(250, 178, 25, 0.14);
+  --good: #0a7f5a;
+  --good-ink: #067857;
+  --good-wash: rgba(16, 185, 129, 0.12);
+  --critical: #e11d48;
+  --critical-ink: #c81e4a;
+  --critical-wash: rgba(225, 29, 72, 0.1);
+  --warning: #f59e0b;
+  --warning-ink: #92600a;
+  --warning-wash: rgba(245, 158, 11, 0.15);
 
-  --radius-sm: 8px;
-  --radius: 14px;
-  --radius-lg: 20px;
-  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 4px 16px rgba(11, 11, 11, 0.05);
-  --focus: 0 0 0 3px rgba(42, 120, 214, 0.45);
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
+  /* Per-topic accents. Used for borders, icon tiles and dots, never for text,
+     so a vivid hue is safe in both themes. */
+  --topic-javascript: #eab308;
+  --topic-web: #f97316;
+  --topic-cs: #06b6d4;
+  --topic-science: #10b981;
+  --topic-geography: #3b82f6;
+  --topic-math: #8b5cf6;
+  --topic-python: #3776ab;
+  --topic-history: #b45309;
+  --topic-movies: #ec4899;
+
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --shadow: 0 1px 2px rgba(22, 18, 58, 0.05), 0 6px 20px rgba(22, 18, 58, 0.07);
+  --shadow-lift: 0 10px 30px rgba(108, 76, 241, 0.18);
+  --shadow-pop: 0 18px 44px rgba(108, 76, 241, 0.26);
+  --focus: 0 0 0 4px rgba(108, 76, 241, 0.4);
+  --gradient: linear-gradient(135deg, #6c4cf1, #a855f7 45%, #ff5c8a);
+  --gradient-warm: linear-gradient(135deg, #ff5c8a, #ffb020);
+  --font: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Dark tokens live in one custom property block, applied both by the OS setting
+   and by the manual toggle. */
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme='light'])) {
     color-scheme: dark;
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --surface-raised: #212120;
-    --surface-sunken: #262624;
-    --ink: #ffffff;
-    --ink-2: #c3c2b7;
-    --ink-muted: #9b9990;
+    --page: #0c0a1b;
+    --surface: #15122b;
+    --surface-raised: #1c1838;
+    --surface-sunken: #221d42;
+    --ink: #f4f2ff;
+    --ink-2: #c3bce6;
+    --ink-muted: #948dba;
     --border: rgba(255, 255, 255, 0.1);
-    --border-strong: #383835;
-    --grid: #2c2c2a;
-    --accent: #2a78d6;
-    --accent-hover: #3987e5;
-    --accent-ink: #86b6ef;
-    --accent-wash: rgba(57, 135, 229, 0.16);
-    --series: #3987e5;
-    --good-ink: #3ecf3e;
-    --good-wash: rgba(12, 163, 12, 0.16);
-    --critical-ink: #f08080;
-    --critical-wash: rgba(208, 59, 59, 0.18);
-    --warning-ink: #fab219;
-    --warning-wash: rgba(250, 178, 25, 0.14);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --border-strong: #352e5e;
+    --grid: #2a2450;
+    --accent: #8b6dff;
+    --accent-hover: #9d82ff;
+    --accent-ink: #b9a5ff;
+    --accent-wash: rgba(139, 109, 255, 0.18);
+    --series: #8b6dff;
+    --good: #0d9668;
+    --good-ink: #34d399;
+    --good-wash: rgba(16, 185, 129, 0.18);
+    --critical-ink: #fb7185;
+    --critical-wash: rgba(225, 29, 72, 0.2);
+    --warning-ink: #fbbf24;
+    --warning-wash: rgba(245, 158, 11, 0.16);
+    --topic-python: #5a9fd4;
+    --topic-history: #d97706;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.4);
+    --shadow-lift: 0 12px 34px rgba(0, 0, 0, 0.5);
+    --shadow-pop: 0 20px 50px rgba(0, 0, 0, 0.6);
+    --focus: 0 0 0 4px rgba(139, 109, 255, 0.5);
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --page: #0d0d0d;
-  --surface: #1a1a19;
-  --surface-raised: #212120;
-  --surface-sunken: #262624;
-  --ink: #ffffff;
-  --ink-2: #c3c2b7;
-  --ink-muted: #9b9990;
+  --page: #0c0a1b;
+  --surface: #15122b;
+  --surface-raised: #1c1838;
+  --surface-sunken: #221d42;
+  --ink: #f4f2ff;
+  --ink-2: #c3bce6;
+  --ink-muted: #948dba;
   --border: rgba(255, 255, 255, 0.1);
-  --border-strong: #383835;
-  --grid: #2c2c2a;
-  --accent: #2a78d6;
-  --accent-hover: #3987e5;
-  --accent-ink: #86b6ef;
-  --accent-wash: rgba(57, 135, 229, 0.16);
-  --series: #3987e5;
-  --good-ink: #3ecf3e;
-  --good-wash: rgba(12, 163, 12, 0.16);
-  --critical-ink: #f08080;
-  --critical-wash: rgba(208, 59, 59, 0.18);
-  --warning-ink: #fab219;
-  --warning-wash: rgba(250, 178, 25, 0.14);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --border-strong: #352e5e;
+  --grid: #2a2450;
+  --accent: #8b6dff;
+  --accent-hover: #9d82ff;
+  --accent-ink: #b9a5ff;
+  --accent-wash: rgba(139, 109, 255, 0.18);
+  --series: #8b6dff;
+  --good: #0d9668;
+  --good-ink: #34d399;
+  --good-wash: rgba(16, 185, 129, 0.18);
+  --critical-ink: #fb7185;
+  --critical-wash: rgba(225, 29, 72, 0.2);
+  --warning-ink: #fbbf24;
+  --warning-wash: rgba(245, 158, 11, 0.16);
+  --topic-python: #5a9fd4;
+  --topic-history: #d97706;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.4);
+  --shadow-lift: 0 12px 34px rgba(0, 0, 0, 0.5);
+  --shadow-pop: 0 20px 50px rgba(0, 0, 0, 0.6);
+  --focus: 0 0 0 4px rgba(139, 109, 255, 0.5);
 }
 
 /* ------------------------------------------------------------------ base */
@@ -1719,5 +1754,396 @@ fieldset.card {
   .bar-fill,
   .progress-fill {
     background: CanvasText;
+  }
+}
+
+/* ==========================================================================
+   Arcade layer
+   The bold, game-like pass over the base components above: display type,
+   gradients, per-topic colour, and the motion that makes answering feel
+   physical. It only overrides presentation, never layout hooks, so the
+   markup and the test selectors are untouched.
+   ========================================================================== */
+
+/* ------------------------------------------------------------ typography */
+
+h1,
+h2,
+h3,
+.brand,
+.stat-value,
+.score-ring-value,
+.grade-badge,
+.btn-large,
+.feedback-title {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.screen-header h1 {
+  font-size: clamp(1.9rem, 1.2rem + 2.6vw, 2.9rem);
+  font-weight: 800;
+  line-height: 1.05;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lede {
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+/* ----------------------------------------------------------- page canvas */
+
+/* Two slow-drifting colour washes behind everything. Fixed and non-interactive,
+   so they never affect layout or hit-testing. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -20vmax;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38vmax 38vmax at 18% 12%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 60%),
+    radial-gradient(32vmax 32vmax at 82% 8%, color-mix(in srgb, var(--accent-2) 22%, transparent), transparent 60%),
+    radial-gradient(30vmax 30vmax at 65% 92%, color-mix(in srgb, var(--accent-3) 16%, transparent), transparent 60%);
+  filter: blur(36px);
+  opacity: 0.55;
+  animation: drift 26s var(--ease) infinite alternate;
+}
+
+@keyframes drift {
+  to {
+    transform: translate3d(2vmax, -2vmax, 0) scale(1.08);
+  }
+}
+
+/* ---------------------------------------------------------------- header */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: saturate(1.6) blur(12px);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+/* The emoji sits in a gradient tile rather than floating on the header. */
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--gradient);
+  box-shadow: var(--shadow-lift);
+  font-size: 1.1rem;
+}
+
+.brand:hover .brand-mark {
+  transform: rotate(-8deg) scale(1.06);
+}
+
+.brand-mark {
+  transition: transform 0.25s var(--bounce);
+}
+
+/* ---------------------------------------------------------------- cards */
+
+.card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+.btn {
+  border-radius: 999px;
+  font-weight: 700;
+  transition:
+    transform 0.16s var(--bounce),
+    box-shadow 0.16s var(--ease),
+    background-color 0.16s,
+    border-color 0.16s;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+
+.btn-primary {
+  border-color: transparent;
+  background: var(--gradient);
+  background-size: 160% 160%;
+  box-shadow: var(--shadow-lift);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--gradient);
+  background-size: 160% 160%;
+  background-position: 100% 0;
+  box-shadow: var(--shadow-pop);
+}
+
+.btn-large {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* ------------------------------------------------------------ topic cards */
+
+.topic-card[data-topic='javascript'] { --topic-color: var(--topic-javascript); }
+.topic-card[data-topic='web'] { --topic-color: var(--topic-web); }
+.topic-card[data-topic='cs'] { --topic-color: var(--topic-cs); }
+.topic-card[data-topic='science'] { --topic-color: var(--topic-science); }
+.topic-card[data-topic='geography'] { --topic-color: var(--topic-geography); }
+.topic-card[data-topic='math'] { --topic-color: var(--topic-math); }
+.topic-card[data-topic='python'] { --topic-color: var(--topic-python); }
+.topic-card[data-topic='history'] { --topic-color: var(--topic-history); }
+.topic-card[data-topic='movies'] { --topic-color: var(--topic-movies); }
+
+.topic-card {
+  --topic-color: var(--accent); /* fallback for a topic added without a colour */
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition:
+    transform 0.18s var(--bounce),
+    border-color 0.15s,
+    background-color 0.15s,
+    box-shadow 0.18s var(--ease);
+}
+
+/* A colour bar along the top edge identifies the topic at a glance. */
+.topic-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--topic-color);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.topic-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--topic-color);
+  box-shadow: var(--shadow-lift);
+}
+
+.topic-card:has(.topic-input:checked) {
+  border-color: var(--topic-color);
+  background: color-mix(in srgb, var(--topic-color) 12%, var(--surface-raised));
+}
+
+.topic-card:hover::before,
+.topic-card:has(.topic-input:checked)::before {
+  opacity: 1;
+}
+
+/* The emoji gets a tinted tile so the grid reads as a set of badges. */
+.topic-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--topic-color) 18%, var(--surface));
+  font-size: 1.35rem;
+}
+
+.topic-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+
+.topic-card:has(.topic-input:checked) .topic-check {
+  border-color: var(--topic-color);
+  background: var(--topic-color);
+}
+
+/* ------------------------------------------------------------ quiz screen */
+
+.quiz-progress-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.progress {
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: var(--gradient);
+  border-radius: 999px;
+}
+
+/* ---------------------------------------------------------------- options */
+
+.option {
+  min-height: 64px;
+  padding: 14px 18px;
+  border-width: 2px;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  transition:
+    transform 0.16s var(--bounce),
+    border-color 0.15s,
+    background-color 0.15s,
+    box-shadow 0.16s var(--ease);
+}
+
+.option:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lift);
+}
+
+.option:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+}
+
+.option-key {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--surface-sunken);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.option:hover:not(:disabled) .option-key {
+  background: var(--gradient);
+  color: var(--on-accent);
+}
+
+.option-text {
+  font-size: 1.02rem;
+}
+
+/* The settled states keep their semantic colour but gain the chunkier shape. */
+.option.is-correct {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent);
+}
+
+.option.is-correct .option-key,
+.option.is-wrong .option-key {
+  border-radius: 11px;
+}
+
+/* --------------------------------------------------------------- feedback */
+
+.feedback {
+  border-radius: var(--radius-lg);
+  animation: pop-in 0.3s var(--bounce);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.feedback-title {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.feedback-points {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+/* ------------------------------------------------------------- results */
+
+.score-ring circle {
+  stroke-width: 12;
+}
+
+.score-ring-progress {
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 55%, transparent));
+}
+
+.score-ring-value {
+  font-size: 2.4rem;
+  font-weight: 800;
+}
+
+.grade-badge {
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.stat-tile {
+  border-radius: var(--radius);
+  transition: transform 0.18s var(--bounce);
+}
+
+.stat-tile:hover {
+  transform: translateY(-2px);
+}
+
+.stat-value {
+  font-weight: 800;
+}
+
+/* ----------------------------------------------------------------- code */
+
+.question-card pre {
+  font-family: var(--font-mono);
+}
+
+/* Inline code, from the backtick spans in questions and explanations. */
+code {
+  padding: 0.12em 0.4em;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+  color: var(--accent-ink);
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------- reduced motion */
+
+/* Everything above degrades to a plain, still interface: no drift, no lift,
+   no pop. Colour and shape carry the design on their own. */
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+
+  .feedback {
+    animation: none;
+  }
+
+  .btn:hover:not(:disabled),
+  .btn:active:not(:disabled),
+  .option:hover:not(:disabled),
+  .option:active:not(:disabled),
+  .topic-card:hover,
+  .stat-tile:hover,
+  .brand:hover .brand-mark {
+    transform: none;
   }
 }
