@@ -2,6 +2,7 @@ package quizarena.client
 
 import kotlinx.browser.document
 import kotlinx.browser.window
+import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.Node
@@ -131,6 +132,13 @@ fun prefersReducedMotion(): Boolean =
 fun Element.query(selector: String): HTMLElement? = querySelector(selector) as? HTMLElement
 
 fun Element.queryAll(selector: String): List<HTMLElement> {
+    val found = querySelectorAll(selector)
+    return (0 until found.length).mapNotNull { found.item(it) as? HTMLElement }
+}
+
+fun Document.query(selector: String): HTMLElement? = querySelector(selector) as? HTMLElement
+
+fun Document.queryAll(selector: String): List<HTMLElement> {
     val found = querySelectorAll(selector)
     return (0 until found.length).mapNotNull { found.item(it) as? HTMLElement }
 }

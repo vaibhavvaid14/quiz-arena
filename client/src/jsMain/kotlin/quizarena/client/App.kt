@@ -270,7 +270,7 @@ class AppContext internal constructor(
 
     private val screens: Map<Screen, ScreenRenderer> = mapOf(
         Screen.SETUP to ::renderSetupScreenStub,
-        Screen.QUIZ to ::renderQuizScreenStub,
+        Screen.QUIZ to ::renderQuizScreen,
         Screen.RESULTS to ::renderResultsScreen,
         Screen.HISTORY to ::renderHistoryScreen,
         Screen.LEADERBOARD to ::renderLeaderboardScreen,

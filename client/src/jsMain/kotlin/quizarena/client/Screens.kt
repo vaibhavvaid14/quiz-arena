@@ -18,12 +18,3 @@ fun renderSetupScreenStub(root: HTMLElement, ctx: AppContext, params: ScreenPara
     return null
 }
 
-fun renderQuizScreenStub(root: HTMLElement, ctx: AppContext, params: ScreenParams): (() -> Unit)? {
-    root.appendChild(
-        h("section", "screen screen-quiz") {
-            +t("h1", text = "Quiz")
-            +t("p", "lede", "Not ported yet.")
-        },
-    )
-    return null
-}
