@@ -42,9 +42,7 @@ kotlin {
 val assembleWeb by tasks.registering(Sync::class) {
     dependsOn("jsBrowserProductionWebpack")
     into(layout.buildDirectory.dir("web"))
-    from("src/jsMain/resources") // index.html
-    from(rootProject.file("css")) { into("css") }
-    from(rootProject.file("js/theme-init.js")) { into("js") }
+    from("src/jsMain/resources") // index.html, css/, js/theme-init.js
     from(layout.buildDirectory.file("kotlin-webpack/js/productionExecutable/quiz-arena.js")) { into("js") }
 }
 
@@ -57,8 +55,6 @@ val assembleTestWeb by tasks.registering(Sync::class) {
     dependsOn("jsBrowserProductionWebpack")
     into(layout.buildDirectory.dir("web-test"))
     from("src/jsMain/resources")
-    from(rootProject.file("css")) { into("css") }
-    from(rootProject.file("js/theme-init.js")) { into("js") }
     from(layout.buildDirectory.file("kotlin-webpack/js/productionExecutable/quiz-arena.js")) { into("js") }
     from(rootProject.file("tests")) { into("tests") }
 }
