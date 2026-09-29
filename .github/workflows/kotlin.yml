@@ -1,0 +1,55 @@
+name: kotlin
+
+on:
+  push:
+    branches: [main, kotlin]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # A clean checkout: the wrapper fetches Gradle itself, which is the one
+      # thing that cannot be verified on the machine this was written on.
+      - name: Backend tests
+        run: ./gradlew :server:test
+
+      - name: Shared module compiles for both targets
+        run: ./gradlew :shared:compileKotlinJvm :shared:compileKotlinJs
+
+      - name: Build the runnable jar
+        run: ./gradlew :server:buildFatJar
+
+      # The browser suite predates the Kotlin port and only speaks HTTP, so it
+      # is an independent check that the API still behaves as it used to.
+      - name: Browser tests against the Kotlin server
+        run: |
+          QUIZ_TEST=1 PORT=8000 QUIZ_STATIC=. \
+            java -jar server/build/libs/server-all.jar &
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/api/health >/dev/null && break
+            sleep 1
+          done
+          dom=$(google-chrome --headless=new --no-sandbox --disable-gpu \
+                  --virtual-time-budget=150000 \
+                  --dump-dom http://127.0.0.1:8000/tests/)
+          title=$(printf '%s' "$dom" | grep -o '<title>[^<]*</title>')
+          echo "$title"
+          printf '%s' "$title" | grep -q 'PASS'
+
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: server/build/reports/tests/test
