@@ -29,6 +29,7 @@ kotlin {
         }
         jsTest.dependencies {
             implementation(kotlin("test"))
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
         }
     }
 }
@@ -45,4 +46,19 @@ val assembleWeb by tasks.registering(Sync::class) {
     from(rootProject.file("css")) { into("css") }
     from(rootProject.file("js/theme-init.js")) { into("js") }
     from(layout.buildDirectory.file("kotlin-webpack/js/productionExecutable/quiz-arena.js")) { into("js") }
+}
+
+/**
+ * The same web root plus the browser test suite, for running the end-to-end
+ * tests against a server in test mode. Kept separate so the deployed image
+ * never carries the tests.
+ */
+val assembleTestWeb by tasks.registering(Sync::class) {
+    dependsOn("jsBrowserProductionWebpack")
+    into(layout.buildDirectory.dir("web-test"))
+    from("src/jsMain/resources")
+    from(rootProject.file("css")) { into("css") }
+    from(rootProject.file("js/theme-init.js")) { into("js") }
+    from(layout.buildDirectory.file("kotlin-webpack/js/productionExecutable/quiz-arena.js")) { into("js") }
+    from(rootProject.file("tests")) { into("tests") }
 }
