@@ -1,97 +1,96 @@
 # Kotlin port — state and how to resume
 
-Quiz Arena is being rewritten from Python + vanilla JS to Kotlin, because the
-project may not use the original stack. Work happens on the `kotlin` branch;
-`main` still holds the Python app and is what the live Render service runs, so
-nothing here has broken the deployment.
+Quiz Arena was rewritten from Python + vanilla JS to Kotlin, because the project
+may not use the original stack. The work lives on the `kotlin` branch. `main`
+still holds the Python app and is what the live Render service runs, so nothing
+here has touched the deployment.
 
-**Paused after stage 2.** The backend is done and passing; the frontend is not
-started.
+**The rewrite is complete and verified. It has not been deployed or merged.**
 
-## Where things stand
+## State
 
 | Stage | State |
 |---|---|
 | 1. Toolchain, Gradle, `shared` module | done |
-| 2. Ktor backend + tests | done — 60 tests passing |
-| 3. Kotlin/JS frontend | **not started** |
-| 4. Docker + Render deploy | not started |
-
-### Done
+| 2. Ktor backend + tests | done |
+| 3. Kotlin/JS frontend + tests | done |
+| CI | green, including the Docker build |
+| 4. Deploy to Render | **not done — needs the repo owner** |
+| 5. Merge to `main`, retire the Python tree | **not done — blocked on the deploy** |
 
 ```
 shared/    Rules.kt, Dto.kt          compiled for BOTH the JVM and JS
-server/    Application.kt  entry point, env config
-           Routing.kt      routes, CSP, error envelope, static allowlist
-           QuizService.kt  the whole of the old service.py
-           Seeder.kt       bank validation + idempotent sync
-           Database.kt     SQLite/JDBC, transactions, migrations
-           Errors.kt       domain errors -> HTTP
-client/    (declared in settings.gradle.kts, no sources yet)
+server/    Application, Routing, QuizService, Seeder, Database, Errors
+client/    Api, Dom, Timer, Storage, Config, Components, Dialog, App,
+           and the five screens (setup, quiz, results, history, leaderboard)
 ```
 
-`schema.sql` and `questions.json` were carried over unchanged and live in
-`server/src/main/resources/`.
+The old JavaScript frontend is gone. The Python tree is still present but has no
+frontend on this branch, so `python serve.py` here would serve nothing — that is
+only true on `kotlin`, and it goes away at merge.
 
-### Two independent checks that the port is faithful
+## Tests: 82, all green on a clean Linux CI runner
 
-1. **60 Kotlin tests pass** (`ApiTest`, `ServiceTest`, `DatabaseTest`,
-   `RulesTest`). The Python suite had 51.
-2. **The 27 original JavaScript browser tests pass unmodified** against the
-   Kotlin server. They only speak HTTP, so they never learned the backend
-   changed language — which makes them a check that could not have been bent to
-   fit the new code.
+| Suite | Count | Command |
+|---|---|---|
+| Server | 60 | `./gradlew :server:test` |
+| Client | 15 | `./gradlew :client:jsTest` (headless Chrome) |
+| End-to-end | 7 | see below |
+
+The end-to-end suite is the strongest evidence the port is faithful. It loads
+the real page in an iframe and clicks through it, importing nothing from the
+application. It was written against the *JavaScript* frontend and passes
+unchanged against the Kotlin one, so it cannot have been adjusted to fit.
+
+```bash
+./gradlew :server:buildFatJar :client:assembleTestWeb
+QUIZ_TEST=1 QUIZ_STATIC=client/build/web-test java -jar server/build/libs/server-all.jar
+chrome --headless=new --virtual-time-budget=180000 --dump-dom http://127.0.0.1:8000/tests/
+# expect PASS 7/7
+```
 
 ## Resuming
 
-### Build and test
-
 ```bash
-./gradlew :server:test          # 60 tests
-./gradlew :shared:compileKotlinJvm :shared:compileKotlinJs
+./gradlew :server:run      # builds the bundle and serves it on :8000
+./gradlew :server:test :client:jsTest
 ```
 
-### Run it, and re-run the original browser suite against it
+JDK 21 is required; Gradle comes from the wrapper.
 
-```bash
-QUIZ_TEST=1 PORT=8300 QUIZ_STATIC=. ./gradlew :server:run
-# then, in another shell:
-chrome --headless=new --virtual-time-budget=150000 \
-       --dump-dom http://127.0.0.1:8300/tests/      # expect PASS 27/27
-```
+### The one thing that must happen in the right order
 
-Environment: `HOST`, `PORT`, `QUIZ_DB`, `QUIZ_STATIC`, `QUIZ_TEST`.
+The live Render service is a **Python** web service wired to `main`. Changing
+`render.yaml` does not retype an existing service, so **merging Kotlin into
+`main` before the deploy is re-pointed would break the live site**: Render would
+auto-deploy a repo with no Python app in it.
 
-### Next steps, in order
+So:
 
-1. **CI for the Kotlin build.** A workflow that runs `./gradlew :server:test` on
-   a clean checkout. This also settles the one thing never verified locally —
-   see "Known gaps" below.
-2. **Stage 3, the Kotlin/JS frontend.** Port `js/**` (~3,700 lines) to
-   `client/src/jsMain`. `css/styles.css` can be reused as-is.
-3. **Stage 4, deploy.** Render has no JVM runtime, so `render.yaml` switches
-   from `runtime: python` to Docker, with a multi-stage build
-   (`./gradlew :server:buildFatJar`, then a JRE base image). Expect cold starts
-   to get worse on the free plan: JVM boot lands on top of the 15-minute sleep.
-4. **Merge to `main`** and retire the Python tree once stage 3 is verified.
+1. **Re-point the deploy first.** In Render, either create a new Blueprint
+   service from the `kotlin` branch (safest — you see it working before anything
+   changes), or delete the existing service and re-apply the blueprint. Either
+   way it needs the account owner.
+2. **Then merge**, retiring the Python tree in the merge commit: `serve.py`,
+   `server/*.py`, `server/tests/`, `requirements.txt`, `start.bat`, and
+   `.github/workflows/tests.yml`.
 
-### Open question, worth settling before stage 3
-
-Whether the frontend really has to be Kotlin. Stage 3 is more than half the
-remaining work, and "use Kotlin" most often means the backend or an Android app.
-If the backend alone satisfies the requirement, the existing JS frontend is
-better kept than replaced: it is what independently verifies the Kotlin server.
+An attempt to delete the Python tree earlier was refused by the sandbox as
+irreversible local destruction, which is why it is still here. The owner has
+asked for it to go at merge.
 
 ## Known gaps
 
-- **A clean-checkout `./gradlew build` has never been verified.** The wrapper
-  downloads Gradle on first run, and the machine this was built on could not
-  reach `services.gradle.org`'s CDN from the JVM (curl could). The local cache
-  was seeded by hand instead. CI on a fresh runner is what will actually prove
-  it — step 1 above.
-- `validateDistributionUrl=false` in the root build is only there to skip that
-  reachability probe. The committed wrapper still points at the real URL.
-- The Python tree is still present on this branch; nothing removes it yet.
+- **The Docker deploy has never actually run on Render.** CI proves the image
+  builds; nothing has proved it boots and serves there.
+- **No visual preview tool.** `tests/preview.html` and `preview.js` rendered one
+  screen at a time for visual checks by importing the JavaScript screens. They
+  were deleted rather than left broken; the Kotlin app has no equivalent.
+- **The bundle is ~356 KB** before compression, against a much smaller
+  hand-written JavaScript frontend. Kotlin/JS ships its stdlib, coroutines and
+  the serialization runtime. Expect questions about this.
+- **Cold starts will be worse than the Python version's.** The container has to
+  start and then the JVM has to boot, on top of the free plan's sleep.
 
 ## Decisions worth not re-litigating
 
@@ -107,3 +106,12 @@ better kept than replaced: it is what independently verifies the Kotlin server.
   of them at once.
 - **The static traversal check decides on the resolved path**, so
   `js/../server/QuizService.kt` cannot pass by starting with an allowed prefix.
+- **`Api` passes serializers explicitly** rather than using reified inline
+  functions: a public inline function may not touch private state, and both the
+  player key and the `Json` instance need to stay private.
+- **Client test names are camelCase.** Kotlin/JS rejects backticked identifiers
+  with spaces, unlike the JVM.
+- **`validateDistributionUrl=false`** in the root build only skips Gradle's
+  reachability probe for its own distribution; the committed wrapper still
+  points at the real URL. `gradlew` is committed with its execute bit set —
+  without it, CI fails with exit code 126.
