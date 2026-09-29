@@ -38,3 +38,12 @@ tasks.test {
         events("passed", "failed", "skipped")
     }
 }
+
+/**
+ * `./gradlew :server:run` should just work, so it builds the web bundle first
+ * and points the server at it. Without this the server would start with no UI.
+ */
+tasks.named<JavaExec>("run") {
+    dependsOn(":client:assembleWeb")
+    environment("QUIZ_STATIC", rootProject.file("client/build/web").absolutePath)
+}

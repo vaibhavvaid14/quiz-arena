@@ -1,124 +1,140 @@
 # Quiz Arena
 
-[![tests](https://github.com/vaibhavvaid14/quiz-arena/actions/workflows/tests.yml/badge.svg)](https://github.com/vaibhavvaid14/quiz-arena/actions/workflows/tests.yml)
+[![kotlin](https://github.com/vaibhavvaid14/quiz-arena/actions/workflows/kotlin.yml/badge.svg)](https://github.com/vaibhavvaid14/quiz-arena/actions/workflows/kotlin.yml)
 
 **[Play it live](https://quiz-arena-uyz6.onrender.com/)** — hosted free, so the
-first request after a quiet spell takes about 30 seconds to wake up.
+first request after a quiet spell takes a while to wake up.
 
 ![The Quiz Arena setup screen, showing the nine topics](docs/screenshot.png)
 
-A timed multiple-choice quiz app backed by a real database. Answers get
-instant feedback and explanations, and there are score analytics, per-player
-history and a shared leaderboard. 210 questions across 9 topics, from
-JavaScript and Python to world history and film.
+A timed multiple-choice quiz app backed by a real database. Answers get instant
+feedback and explanations, and there are score analytics, per-player history and
+a shared leaderboard. 210 questions across 9 topics, from JavaScript and Python
+to world history and film.
 
-- **Backend:** Python 3.10+ standard library only (`http.server` + `sqlite3`).
-  A JSON REST API with server-side scoring.
-- **Frontend:** plain HTML, CSS and JavaScript (ES modules). No build step.
-  Display type from Google Fonts, with a system-font fallback offline.
-- **Nothing to install.** If Python runs, the app runs.
+**Kotlin throughout**, in three Gradle modules:
+
+| | |
+|---|---|
+| `shared` | Models and scoring rules, compiled for **both** the JVM and the browser |
+| `server` | [Ktor](https://ktor.io) on Netty, SQLite over JDBC, server-side scoring |
+| `client` | Kotlin/JS, no framework — the DOM toolkit is about a hundred lines |
+
+The shared module is the reason this is one language rather than two. The API's
+request and response types are declared once and compiled into both the server
+and the browser, so renaming a field breaks the build on both sides at the same
+time. A server and a client that merely agree by convention cannot do that.
 
 ## Run it
 
 ```bash
-python serve.py --open        # or double-click start.bat on Windows
+./gradlew :server:run      # http://127.0.0.1:8000/
 ```
 
-Then open <http://127.0.0.1:8000/>. On first start the server creates
-`data/quiz.db`, applies the schema and loads the 210 questions from
-`data/questions.json`. Every later start syncs any edits you've made to that
-file.
+That builds the Kotlin/JS bundle, points the server at it and starts both. You
+need a JDK 21; Gradle comes from the wrapper.
 
-| Option | Meaning |
+On first start the server creates `data/quiz.db`, applies the schema and loads
+the 210 questions bundled with the jar. Every later start syncs any edits you
+have made to `data/questions.json`.
+
+| Variable | Meaning |
 |---|---|
-| `--port 8000` | port to listen on |
-| `--db path/to/file.db` | use a different database file |
-| `--test` | throwaway database, and serves the browser tests at `/tests/` |
-| `--open` | open the browser |
+| `PORT` | port to listen on (default 8000) |
+| `HOST` | interface to bind (default 127.0.0.1; a container needs 0.0.0.0) |
+| `QUIZ_DB` | SQLite file (default `data/quiz.db`) |
+| `QUIZ_STATIC` | directory holding `index.html`, `css/` and `js/` |
+| `QUIZ_TEST` | `1` for a throwaway database that also serves `/tests/` |
 
 ## Test it
 
 ```bash
-python -m unittest discover -s server/tests -t .     # 51 backend tests
-python serve.py --test                                # then open http://127.0.0.1:8000/tests/
+./gradlew :server:test     # 60 tests on the JVM
+./gradlew :client:jsTest   # 15 tests in headless Chrome
 ```
 
-**Backend tests.** They cover:
-- the schema and its constraints
-- seeding
-- every quiz rule, including timer expiry, using a fake clock
-- leaderboard ranking
-- the HTTP API itself: auth, error format, request limits, and static files
-  (including path traversal)
+**Server tests** cover the schema and its constraints, seeding, every quiz rule
+including timer expiry (driven by a fake clock), leaderboard ranking, and the
+HTTP layer itself: auth, the error envelope, request limits and the static file
+allowlist, path traversal included.
 
-**Browser tests (27).** They cover the API client, local storage, the timer,
-and end-to-end flows. The flows drive the real UI against the real server:
-play, resume, end early, keyboard play, name conflicts, countdown expiry, and
-what happens when the server is offline.
+**Client tests** cover the drift-free timer and device storage — the versioned
+envelope, case-insensitive player names, corrupt and stale entries, and a
+storage backend that throws on every call.
+
+**End-to-end tests** drive the real application: they load the page in an
+iframe and click through it, importing nothing from the app. They were written
+against the previous JavaScript frontend and pass unchanged against the Kotlin
+one, which is the point — they cannot have been adjusted to fit the new code.
+
+```bash
+./gradlew :server:buildFatJar :client:assembleTestWeb
+QUIZ_TEST=1 QUIZ_STATIC=client/build/web-test java -jar server/build/libs/server-all.jar
+# then open http://127.0.0.1:8000/tests/
+```
 
 The page title becomes `PASS n/n` or `FAIL n/n`, so it also works headless:
 
 ```bash
-chrome --headless=new --virtual-time-budget=90000 --dump-dom http://127.0.0.1:8000/tests/
+chrome --headless=new --virtual-time-budget=180000 --dump-dom http://127.0.0.1:8000/tests/
 ```
-
-`tests/preview.html?screen=setup|quiz|feedback|results|history|leaderboard&theme=light|dark`
-seeds the test database through the API and opens that screen, for visual
-checks.
 
 ## Deploy it
 
-Already running at <https://quiz-arena-uyz6.onrender.com/>, from the
-[render.yaml](render.yaml) blueprint in this repo. To deploy your own copy: in
-the Render dashboard choose **New > Blueprint**, pick the repo and apply. Render
-reads the file and builds the service; nothing needs configuring by hand.
-
-The start command is `python serve.py --host 0.0.0.0`. `serve.py` takes its
-host, port and database path from `HOST`, `PORT` and `QUIZ_DB` when they are
-set, which is how Render supplies the port it wants.
+Built and run as a container, because Render has no native JVM runtime. In the
+Render dashboard choose **New > Blueprint**, pick this repo and apply; it reads
+[render.yaml](render.yaml) and builds from the [Dockerfile](Dockerfile), which
+compiles the server jar and the Kotlin/JS bundle and ships both.
 
 On the free plan the disk is wiped on every deploy and the service sleeps after
-about fifteen minutes idle, so the first request after a nap takes ~30 seconds
-and scores do not survive a restart. Questions re-seed from
-`data/questions.json` on every boot, so the quiz itself always works.
-`render.yaml` shows the disk and `QUIZ_DB` settings that make scores permanent.
+about fifteen minutes idle, so scores do not survive a restart, and the first
+request after a nap has to start the container *and* boot the JVM. Questions
+re-seed on every boot, so the quiz itself always works. `render.yaml` shows the
+disk and `QUIZ_DB` settings that make scores permanent.
+
 ## How it works
 
 ```
-Browser (js/)                         Server (server/)                 SQLite (data/quiz.db)
-─────────────                         ────────────────                 ─────────────────────
-screens ── api.js ── fetch JSON ──►  app.py   routing, errors,  ──►   topics, questions,
-timer (display only)                           static files             question_options,
-storage (player key,                  service.py  quiz rules            players, attempts,
-  resume id, prefs)                   rules.py    scoring constants     attempt_questions
-                                      seed.py     questions.json → DB
-                                      db.py       connections, migrations
+Browser (client/)                    Server (server/)                 SQLite
+─────────────────                    ────────────────                 ──────
+screens ── Api ── fetch JSON ──►  Routing      routes, errors,  ──►  topics, questions,
+Timer (display only)                           static files          question_options,
+Storage (player key,              QuizService  quiz rules            players, attempts,
+  resume id, prefs)               Rules        scoring constants     attempt_questions
+                                  Seeder       questions.json → DB
+        ▲                         Database     connections, migrations
+        └───────── shared: models + scoring rules ─────────┘
 ```
 
-**The server is in charge.** A quiz app that ships its answer key to the
-browser can be beaten with devtools, so this one doesn't:
+**The server is in charge.** A quiz app that ships its answer key to the browser
+can be beaten with devtools, so this one doesn't:
 
 - **Answers stay secret until you answer.** The browser gets options without
-  answers. The correct option and the explanation arrive only once that
-  question is settled.
+  answers. The correct option and the explanation arrive only once that question
+  is settled.
 - **Server clock only.** Time is measured by the server, minus a 300 ms
   allowance for network delay, so the browser can't claim it answered faster
   than it did.
 - **Closing the tab doesn't stop the clock.** Every request first settles any
-  clock that ran out ("lazy expiry"). A tab closed mid-quiz still times out,
-  and a whole-quiz countdown still submits the quiz.
-- **Reading explanations is free.** A question's clock stops when you answer
-  and the next one starts only when you ask for it.
-- **Double-clicks and retries are harmless.** Answering twice or clicking
-  "next" twice returns the current state instead of erroring. A stale tab gets
-  a 409 and reloads the real state.
+  clock that ran out ("lazy expiry"). A tab closed mid-quiz still times out, and
+  a whole-quiz countdown still submits the quiz.
+- **Reading explanations is free.** A question's clock stops when you answer and
+  the next one starts only when you ask for it.
+- **Double-clicks and retries are harmless.** Answering twice or clicking "next"
+  twice returns the current state instead of erroring. A stale tab gets a 409
+  and reloads the real state.
 
-**Players.** There are no passwords. Using a name for the first time claims
-it and returns a secret key, which the server stores only as a SHA-256 hash.
-The browser keeps the key and sends it as `X-Player-Key`. Another browser
-can't use that name, and attempts are private to their owner.
+**Players.** There are no passwords. Using a name for the first time claims it
+and returns a secret key, which the server stores only as a SHA-256 hash. The
+browser keeps the key and sends it as `X-Player-Key`. Another browser can't use
+that name, and attempts are private to their owner.
 
-**Database design** ([server/schema.sql](server/schema.sql)):
+**Concurrency.** One SQLite connection behind a lock: SQLite has a single writer
+regardless, and `BEGIN IMMEDIATE` is easier to reason about that way. The lock
+matters because Ktor serves requests on many threads. Nested transactions join
+the outer one rather than issuing a second `BEGIN`, which SQLite rejects.
+
+**Database design** ([schema.sql](server/src/main/resources/schema.sql)):
 
 - **Answer options are rows**, not a JSON list. A partial unique index
   guarantees at most one correct option per question.
@@ -126,11 +142,11 @@ can't use that name, and attempts are private to their owner.
   foreign key with `ON DELETE RESTRICT`, so an option someone chose can never
   disappear. The seeder also refuses to change the options of a question that
   has already been played.
-- **Questions are never deleted.** Removing one from the JSON deactivates it,
-  so old attempts stay reviewable.
+- **Questions are never deleted.** Removing one from the JSON deactivates it, so
+  old attempts stay reviewable.
 - **Finished attempts store their score summary**, so history and the
-  leaderboard are single indexed queries. The leaderboard uses window
-  functions (`ROW_NUMBER() OVER (PARTITION BY player …)`).
+  leaderboard are single indexed queries. The leaderboard uses window functions
+  (`ROW_NUMBER() OVER (PARTITION BY player …)`).
 - **Engine settings:** foreign keys on, WAL journal, `BEGIN IMMEDIATE` write
   transactions, and schema versioning with `PRAGMA user_version`.
 
@@ -170,10 +186,11 @@ from clustering on one position.
 | 🐍 Python | 30 | Syntax, data structures, comprehensions, generators and the object model |
 | 🏛️ World History | 30 | Empires, revolutions, treaties and the turning points that shaped the world |
 | 🎬 Movies & TV | 30 | Directors, classics, blockbusters and the small screen's biggest hits |
+
 ## Adding questions
 
-Edit `data/questions.json`, then restart the server or run
-`python -m server.seed`. Each question looks like this:
+Edit `data/questions.json`, then restart the server. Each question looks like
+this:
 
 ```json
 {
@@ -189,8 +206,9 @@ Edit `data/questions.json`, then restart the server or run
 ```
 
 The whole file is validated before anything is written, and one bad question
-rejects the sync. To change the options of a question people have already
-played, give it a new id; the old one is retired automatically.
+rejects the sync — with every problem reported, not just the first. To change
+the options of a question people have already played, give it a new id; the old
+one is retired automatically.
 
 ## Scoring
 
@@ -204,25 +222,26 @@ played, give it a new id; the old one is retired automatically.
 The percentage score is correct answers ÷ questions. Grades: A ≥ 90, B ≥ 75,
 C ≥ 60, D ≥ 40, F below.
 
-The **leaderboard** shows each player's single best finished quiz of at least
-5 questions, ranked by points. Quizzes ended early and "retry missed" runs
-don't count.
+The **leaderboard** shows each player's single best finished quiz of at least 5
+questions, ranked by points. Quizzes ended early and "retry missed" runs don't
+count.
 
 ## Known limits
 
 - **Names aren't password-protected.** A name belongs to the browser that
   claimed it; clearing site data loses access to it. Real accounts would need
-  sign-in (see the suggestions in the project notes).
+  sign-in.
 - **Single machine only.** SQLite with one server process suits a class or a
-  team. For many simultaneous users, move to PostgreSQL behind a production
-  WSGI server.
-- **Tested in Chrome.** The app uses ES modules, `<dialog>`, CSS `:has()`,
-  `color-mix()` and `backdrop-filter`, all supported by current Chrome, Edge,
-  Firefox and Safari.
+  team. For many simultaneous users, move to PostgreSQL.
+- **The bundle is not small.** Kotlin/JS ships its standard library, coroutines
+  and the serialization runtime, so the compiled UI is a few hundred KB before
+  compression — considerably more than the hand-written JavaScript it replaced.
+  That is the price of one language and a compile-time-checked API contract.
+- **Tested in Chrome.** The app uses `<dialog>`, CSS `:has()`, `color-mix()` and
+  `backdrop-filter`, all supported by current Chrome, Edge, Firefox and Safari.
 - **Fonts come from Google Fonts.** Offline, or anywhere that host is blocked,
   the UI falls back to system fonts and everything still works. The
-  Content-Security-Policy in `server/app.py` allows exactly those two font
-  hosts and nothing else.
+  Content-Security-Policy allows exactly those two font hosts and nothing else.
 
 ## Licence
 
