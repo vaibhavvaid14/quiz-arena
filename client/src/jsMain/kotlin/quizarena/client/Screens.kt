@@ -1,0 +1,39 @@
+package quizarena.client
+
+import org.w3c.dom.HTMLElement
+
+/**
+ * Placeholders for the screens still being ported. Each is replaced by its own
+ * file as the port reaches it; this exists so the module keeps compiling in
+ * between, rather than accumulating errors across several screens at once.
+ */
+
+fun renderSetupScreenStub(root: HTMLElement, ctx: AppContext, params: ScreenParams): (() -> Unit)? {
+    root.appendChild(
+        h("section", "screen screen-setup") {
+            +t("h1", text = "Setup")
+            +t("p", "lede", "Not ported yet.")
+        },
+    )
+    return null
+}
+
+fun renderQuizScreenStub(root: HTMLElement, ctx: AppContext, params: ScreenParams): (() -> Unit)? {
+    root.appendChild(
+        h("section", "screen screen-quiz") {
+            +t("h1", text = "Quiz")
+            +t("p", "lede", "Not ported yet.")
+        },
+    )
+    return null
+}
+
+fun renderResultsScreenStub(root: HTMLElement, ctx: AppContext, params: ScreenParams): (() -> Unit)? {
+    root.appendChild(
+        h("section", "screen screen-results") {
+            +t("h1", text = "Results")
+            +t("p", "lede", "Not ported yet.")
+        },
+    )
+    return null
+}
