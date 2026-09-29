@@ -9,6 +9,13 @@ kotlin {
             commonWebpackConfig {
                 outputFileName = "quiz-arena.js"
             }
+            // The client needs a real DOM, so its tests run in headless Chrome
+            // rather than on Node.
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                }
+            }
         }
         // Produces a single bundle the page loads; no other build step.
         binaries.executable()
