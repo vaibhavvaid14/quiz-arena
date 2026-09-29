@@ -8,3 +8,11 @@ Thumbs.db
 data/*.db
 data/*.db-wal
 data/*.db-shm
+
+# Gradle / Kotlin build outputs
+.gradle/
+build/
+*/build/
+.kotlin/
+kotlin-js-store/
+local.properties
