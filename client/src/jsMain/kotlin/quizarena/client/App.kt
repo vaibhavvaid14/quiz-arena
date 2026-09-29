@@ -269,7 +269,7 @@ class AppContext internal constructor(
     internal fun closeScope() = scope.cancel()
 
     private val screens: Map<Screen, ScreenRenderer> = mapOf(
-        Screen.SETUP to ::renderSetupScreenStub,
+        Screen.SETUP to ::renderSetupScreen,
         Screen.QUIZ to ::renderQuizScreen,
         Screen.RESULTS to ::renderResultsScreen,
         Screen.HISTORY to ::renderHistoryScreen,

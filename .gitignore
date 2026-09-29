@@ -16,3 +16,6 @@ build/
 .kotlin/
 kotlin-js-store/
 local.properties
+
+# Assembled web root (built by :client:assembleWeb)
+client/build/web/

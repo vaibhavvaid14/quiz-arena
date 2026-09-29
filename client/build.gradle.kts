@@ -25,3 +25,17 @@ kotlin {
         }
     }
 }
+
+/**
+ * Assembles the deployable web root: the page, the stylesheet, the theme
+ * bootstrap and the compiled bundle. The server serves this directory
+ * (QUIZ_STATIC), and the Dockerfile copies it.
+ */
+val assembleWeb by tasks.registering(Sync::class) {
+    dependsOn("jsBrowserProductionWebpack")
+    into(layout.buildDirectory.dir("web"))
+    from("src/jsMain/resources") // index.html
+    from(rootProject.file("css")) { into("css") }
+    from(rootProject.file("js/theme-init.js")) { into("js") }
+    from(layout.buildDirectory.file("kotlin-webpack/js/productionExecutable/quiz-arena.js")) { into("js") }
+}
