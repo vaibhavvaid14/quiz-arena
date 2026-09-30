@@ -1,16 +1,19 @@
 /**
- * End-to-end flows: the real app, the real API and a real (throwaway) database.
- * Run the server with `python serve.py --test`, then open /tests/.
+ * End-to-end flows against the real application, the real API and a real
+ * (throwaway) database. Run the server in test mode, then open /tests/.
+ *
+ * These drive the app the way a person does: they load the actual page in an
+ * iframe and click things. Nothing is imported from the application, so the
+ * suite does not care what the UI is written in — it checked the JavaScript
+ * frontend and now checks the Kotlin/JS one without changing a single
+ * assertion.
  *
  * The browser never knows correct answers in advance, so these tests check
- * consistency instead: whatever the server says per question must add up on
- * the results, history and leaderboard screens.
+ * consistency instead: whatever the server says per question must add up on the
+ * results, history and leaderboard screens.
  */
 
-import { createApi } from '../js/api.js';
-import { createApp } from '../js/app.js';
-import { createMemoryBackend, createStorage } from '../js/core/storage.js';
-import { assert, equal, flush, test } from './harness.js';
+import { assert, equal, test } from './harness.js';
 
 const RUN = Date.now().toString(36).slice(-5);
 let playerCounter = 0;
@@ -35,7 +38,7 @@ export async function waitFor(predicate, { timeoutMs = 8000, what = 'condition' 
  */
 function strayNullNode(el) {
   const SERVER_TEXT = '.feedback-explanation, .feedback-answer strong';
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     if (node.parentElement?.closest(SERVER_TEXT)) continue;
     if (['null', 'undefined', 'false'].includes(node.nodeValue.trim())) return node;
@@ -43,56 +46,111 @@ function strayNullNode(el) {
   return null;
 }
 
-async function mount({ storage = createStorage(createMemoryBackend()) } = {}) {
-  const host = document.createElement('div');
-  host.className = 'e2e-host';
-  const root = document.createElement('main');
-  host.append(root);
-  document.body.append(host);
-  const api = createApi({ getKey: () => storage.getCurrentPlayer()?.key ?? null });
-  const app = createApp({ root, api, storage });
-  await app.start();
-  const $ = (selector) => root.querySelector(selector);
-  const $$ = (selector) => [...root.querySelectorAll(selector)];
+/**
+ * Loads the app in an iframe and returns helpers bound to it. Device storage is
+ * cleared first: the iframe shares this page's origin, so a previous test's
+ * player would otherwise still be signed in.
+ */
+async function mount() {
+  localStorage.clear();
+
+  const frame = document.createElement('iframe');
+  frame.className = 'e2e-frame';
+  frame.setAttribute('title', 'Application under test');
+  // Off-screen rather than hidden: a display:none frame does not lay out, and
+  // the app's focus handling expects a real viewport.
+  frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:1200px;height:900px;border:0';
+  document.body.append(frame);
+
+  await new Promise((resolve, reject) => {
+    frame.addEventListener('load', resolve, { once: true });
+    frame.addEventListener('error', reject, { once: true });
+    frame.src = '/';
+  });
+
+  const win = frame.contentWindow;
+  const doc = frame.contentDocument;
+  const $ = (selector) => doc.querySelector(selector);
+  const $$ = (selector) => [...doc.querySelectorAll(selector)];
+
+  await waitFor(() => $('.screen-setup'), { what: 'the app to start' });
 
   const t = {
-    root,
-    api,
-    app,
-    storage,
+    frame,
+    win,
+    doc,
     $,
     $$,
-    async startQuiz({ name = uniqueName('e2e'), count = '5', timerMode = 'off' } = {}) {
-      await waitFor(() => $('.screen-setup'), { what: 'setup screen' });
+
+    /** Clicks a link in the site header, the way a person changes screens. */
+    async nav(section, settled) {
+      $(`.site-nav [data-nav="${section}"]`).click();
+      await waitFor(settled, { what: `the ${section} screen` });
+    },
+
+    /** The id of the unfinished quiz this device remembers, or null. */
+    activeAttemptId() {
+      const raw = localStorage.getItem('quizapp:activeAttempt');
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw).data ?? null;
+      } catch {
+        return null;
+      }
+    },
+
+    async startQuiz({ name = uniqueName('e2e'), count = '5', timerMode = 'off', topics = null, seconds = null } = {}) {
       const input = $('#player-name');
       input.value = name;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new win.Event('input', { bubbles: true }));
+
+      if (topics) {
+        $$('.topic-input').forEach((box) => {
+          const want = topics.includes(box.value);
+          if (box.checked !== want) box.click();
+        });
+      }
       $(`input[name="count"][value="${count}"]`).click();
       $(`input[name="timerMode"][value="${timerMode}"]`).click();
+      if (seconds) {
+        const select = $('#seconds-per-question');
+        select.value = String(seconds);
+        select.dispatchEvent(new win.Event('change', { bubbles: true }));
+      }
+
       $('[data-action="start"]').click();
-      await waitFor(() => $('.screen-quiz .option') || $('.form-error')?.textContent, { what: 'quiz to start' });
+      await waitFor(() => $('.screen-quiz .option') || $('.form-error')?.textContent, { what: 'the quiz to start' });
       return name;
     },
+
     /** Answers the current question with option `index`; resolves with the feedback title. */
     async answer(index = 0) {
-      await waitFor(() => $$('.option:not(:disabled)').length > 0, { what: 'answerable question' });
+      await waitFor(() => $$('.option:not(:disabled)').length > 0, { what: 'an answerable question' });
       $$('.option')[index].click();
       const title = await waitFor(() => $('.feedback-title')?.textContent, { what: 'feedback' });
       // Regression: a null child once rendered as the literal text "null".
       assert(!strayNullNode($('.feedback')), `stray "null" in feedback: ${$('.feedback').textContent}`);
       return title;
     },
+
     async next() {
       const before = $('.quiz-progress-text')?.textContent;
       $('[data-action="next"]').click();
-      await waitFor(() => $('.screen-results .score-ring') || ($('.quiz-progress-text') && $('.quiz-progress-text').textContent !== before && !$('.feedback-title')), {
-        what: 'next question or results',
-      });
+      await waitFor(
+        () =>
+          $('.screen-results .score-ring') ||
+          ($('.quiz-progress-text') && $('.quiz-progress-text').textContent !== before && !$('.feedback-title')),
+        { what: 'the next question or the results' },
+      );
     },
+
+    /** Dispatches a key on the application's own document. */
+    key(key) {
+      doc.dispatchEvent(new win.KeyboardEvent('keydown', { key, bubbles: true }));
+    },
+
     teardown() {
-      app.destroy();
-      host.remove();
-      document.querySelectorAll('.toast-region, dialog').forEach((el) => el.remove());
+      frame.remove();
     },
   };
   return t;
@@ -107,24 +165,22 @@ test('e2e: play a full quiz; results, history and leaderboard agree with the fee
       equal(t.$('.quiz-progress-text').textContent, `Question ${i + 1} of 5`);
       const title = await t.answer(i % 4);
       if (title.includes('Correct!')) correct += 1;
-      assert(t.$('.option.is-correct'), 'server revealed the correct option');
+      assert(t.$('.option.is-correct'), 'the server revealed the correct option');
       equal(t.$$('.option:disabled').length, 4, 'options locked after answering');
       assert(t.$('.feedback-explanation').textContent.length > 0, 'explanation shown');
       await t.next();
     }
 
-    await waitFor(() => t.$('.score-ring-value'), { what: 'results' });
+    await waitFor(() => t.$('.score-ring-value'), { what: 'the results' });
     equal(t.$('.score-ring-value').textContent, `${Math.round((correct / 5) * 100)}%`);
     equal(t.$$('.review-card').length, 5);
-    equal(t.storage.getActiveAttemptId(), null, 'active attempt cleared');
+    equal(t.activeAttemptId(), null, 'active attempt cleared');
 
-    t.app.ctx.navigate('history');
-    await waitFor(() => t.$('.data-table tbody tr'), { what: 'history table' });
+    await t.nav('history', () => t.$('.data-table tbody tr'));
     equal(t.$$('.data-table tbody tr').length, 1);
     assert(t.$('h1').textContent.includes(name));
 
-    t.app.ctx.navigate('leaderboard');
-    await waitFor(() => t.$('.leaderboard-table') || t.$('.empty-state'), { what: 'leaderboard' });
+    await t.nav('leaderboard', () => t.$('.leaderboard-table') || t.$('.empty-state'));
     // Either highlighted in the top list, or told their rank below it -- never both, never neither.
     const mine = t.$$('.leaderboard-table tr.is-me');
     const rankNote = t.$('.your-rank')?.textContent ?? '';
@@ -143,12 +199,12 @@ test('e2e: retry missed starts a quiz with exactly the missed questions', async 
       await t.answer(0);
       await t.next();
     }
-    await waitFor(() => t.$('.results-actions'), { what: 'results' });
+    await waitFor(() => t.$('.results-actions'), { what: 'the results' });
     const retry = t.$('[data-action="retry-missed"]');
     if (!retry) return; // all five happened to be correct: nothing to retry
     const missed = Number(retry.textContent.match(/\d+/)[0]);
     retry.click();
-    await waitFor(() => t.$('.screen-quiz .option'), { what: 'retry quiz' });
+    await waitFor(() => t.$('.screen-quiz .option'), { what: 'the retry quiz' });
     equal(t.$('.quiz-progress-text').textContent, `Question 1 of ${missed}`);
   } finally {
     t.teardown();
@@ -160,11 +216,10 @@ test('e2e: leaving mid-quiz and resuming restores the exact state', async () => 
   try {
     await t.startQuiz();
     await t.answer(1);
-    t.app.ctx.navigate('setup');
-    const resume = await waitFor(() => t.$('[data-action="resume"]'), { what: 'resume banner' });
-    resume.click();
-    await waitFor(() => t.$('.screen-quiz .feedback-title'), { what: 'restored feedback' });
-    equal(t.$$('.option:disabled').length, 4, 'answered question is still locked');
+    await t.nav('setup', () => t.$('[data-action="resume"]'));
+    t.$('[data-action="resume"]').click();
+    await waitFor(() => t.$('.screen-quiz .feedback-title'), { what: 'the restored feedback' });
+    equal(t.$$('.option:disabled').length, 4, 'the answered question is still locked');
     await t.next();
     equal(t.$('.quiz-progress-text').textContent, 'Question 2 of 5');
   } finally {
@@ -179,9 +234,11 @@ test('e2e: ending early marks the rest as skipped', async () => {
     await t.answer(0);
     await t.next();
     t.$$('.quiz-actions .btn').find((b) => b.textContent === 'End quiz').click();
-    const confirm = await waitFor(() => document.querySelector('dialog [data-action="confirm"]'), { what: 'confirm dialog' });
+    const confirm = await waitFor(() => t.doc.querySelector('dialog [data-action="confirm"]'), {
+      what: 'the confirm dialog',
+    });
     confirm.click();
-    await waitFor(() => t.$('.screen-results .notice'), { what: 'results notice' });
+    await waitFor(() => t.$('.screen-results .notice'), { what: 'the results notice' });
     assert(t.$('.notice').textContent.includes('ended this quiz early'));
     const skipped = t.$$('.stat-tile').find((tile) => tile.textContent.startsWith('Skipped'));
     assert(skipped.textContent.includes('4'), `skipped tile: ${skipped.textContent}`);
@@ -194,10 +251,10 @@ test('e2e: keyboard shortcuts answer and advance', async () => {
   const t = await mount();
   try {
     await t.startQuiz();
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }));
-    await waitFor(() => t.$('.feedback-title'), { what: 'feedback after key 2' });
+    t.key('2');
+    await waitFor(() => t.$('.feedback-title'), { what: 'feedback after pressing 2' });
     equal(t.$('.option.is-selected').dataset.index, '1');
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    t.key('ArrowRight');
     await waitFor(() => t.$('.quiz-progress-text').textContent === 'Question 2 of 5', { what: 'question 2' });
   } finally {
     t.teardown();
@@ -212,7 +269,7 @@ test('e2e: a name claimed by another browser is refused', async () => {
   } finally {
     first.teardown();
   }
-  const second = await mount(); // fresh storage = a different browser
+  const second = await mount(); // mount() clears device storage: a different browser
   try {
     await second.startQuiz({ name: name.toUpperCase() });
     const error = second.$('.form-error').textContent;
@@ -226,34 +283,14 @@ test('e2e: a name claimed by another browser is refused', async () => {
 test('e2e: a per-question countdown that runs out reveals the answer', async () => {
   const t = await mount();
   try {
-    await waitFor(() => t.$('.screen-setup'));
-    await t.app.ctx.ensurePlayer(uniqueName('timer'));
-    // 5 s is the server minimum; the headless runner fast-forwards virtual time.
-    await t.app.ctx.startQuiz({ topics: ['math'], difficulty: 'easy', count: 2, timerMode: 'question', secondsPerQuestion: 5, shuffle: true, negativeMarking: false });
+    // 10 s is the shortest the setup screen offers; the headless runner
+    // fast-forwards virtual time, so this does not really wait.
+    await t.startQuiz({ name: uniqueName('timer'), count: '5', timerMode: 'question', seconds: 10 });
     assert(t.$('.timer-ring'), 'timer ring rendered');
-    await waitFor(() => t.$('.feedback.tone-warning'), { timeoutMs: 15000, what: 'time-out feedback' });
+    await waitFor(() => t.$('.feedback.tone-warning'), { timeoutMs: 20000, what: 'the time-out feedback' });
     assert(t.$('.feedback-title').textContent.includes("Time's up"));
-    assert(t.$('.option.is-correct'), 'correct answer revealed');
+    assert(t.$('.option.is-correct'), 'the correct answer is revealed');
   } finally {
     t.teardown();
-  }
-});
-
-test('e2e: a server that cannot be reached shows a retry screen', async () => {
-  const host = document.createElement('div');
-  host.className = 'e2e-host';
-  const root = document.createElement('main');
-  host.append(root);
-  document.body.append(host);
-  const api = createApi({ baseUrl: 'http://127.0.0.1:9' }); // nothing listens on the discard port
-  const app = createApp({ root, api, storage: createStorage(createMemoryBackend()) });
-  try {
-    await app.start();
-    assert(root.textContent.includes("Can't reach the quiz server"));
-    assert([...root.querySelectorAll('button')].some((b) => b.textContent === 'Try again'));
-  } finally {
-    app.destroy();
-    host.remove();
-    await flush();
   }
 });

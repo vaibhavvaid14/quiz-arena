@@ -1,0 +1,67 @@
+name: kotlin
+
+on:
+  push:
+    branches: [main, kotlin]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Kotlin/JS runs the client tests in headless Chrome via Karma.
+      CHROME_BIN: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # A clean checkout: the wrapper fetches Gradle itself, which is the one
+      # thing that cannot be verified on the machine this was written on.
+      - name: Server tests
+        run: ./gradlew :server:test
+
+      - name: Client tests
+        run: ./gradlew :client:jsTest
+
+      - name: Shared module compiles for both targets
+        run: ./gradlew :shared:compileKotlinJvm :shared:compileKotlinJs
+
+      - name: Build the jar and the web bundle
+        run: ./gradlew :server:buildFatJar :client:assembleTestWeb
+
+      # The end-to-end suite loads the real page and clicks through it. It
+      # imports nothing from the application, so it is an independent check
+      # that the whole stack still behaves as it did before the rewrite.
+      - name: End-to-end tests
+        run: |
+          QUIZ_TEST=1 PORT=8000 QUIZ_STATIC=client/build/web-test \
+            java -jar server/build/libs/server-all.jar &
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/api/health >/dev/null && break
+            sleep 1
+          done
+          dom=$(google-chrome --headless=new --no-sandbox --disable-gpu \
+                  --virtual-time-budget=180000 \
+                  --dump-dom http://127.0.0.1:8000/tests/)
+          title=$(printf '%s' "$dom" | grep -o '<title>[^<]*</title>')
+          echo "$title"
+          printf '%s' "$title" | grep -q 'PASS'
+
+      - name: Docker image builds
+        run: docker build -t quiz-arena:ci .
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            server/build/reports/tests
+            client/build/reports/tests

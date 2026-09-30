@@ -3,25 +3,24 @@
 # To deploy: in the Render dashboard choose New > Blueprint, pick this repo and
 # apply. Render reads this file and creates the service; nothing else to set up.
 #
-# The app needs no packages, so the build step only exists to satisfy the Python
-# runtime. At run time Render supplies PORT, which serve.py reads from the
-# environment; --host 0.0.0.0 is required for the container to accept traffic.
+# Render has no native JVM runtime, so the service is built from the Dockerfile,
+# which compiles the Ktor server and the Kotlin/JS bundle and ships both.
+# PORT comes from Render; the Dockerfile sets HOST=0.0.0.0 so the container
+# accepts traffic.
 services:
   - type: web
     name: quiz-arena
-    runtime: python
+    runtime: docker
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python serve.py --host 0.0.0.0
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.6"
 
 # Note on the free plan: the filesystem is wiped on every deploy and the service
 # sleeps after ~15 minutes idle, so players, history and the leaderboard reset
-# when it restarts. Questions are re-seeded from data/questions.json each boot,
-# so the quiz itself always works.
+# when it restarts. Questions are re-seeded from the bundled question bank on
+# each boot, so the quiz itself always works. Expect the first request after a
+# nap to take longer than the Python version did: the container has to start and
+# then the JVM has to boot.
 #
 # To keep scores permanently, add a persistent disk and point the database at it:
 #

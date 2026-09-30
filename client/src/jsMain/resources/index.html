@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Timed multiple-choice quizzes with instant feedback, explanations, score history and a leaderboard." />
+    <meta name="color-scheme" content="light dark" />
+    <title>Quiz Arena</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <!-- Applies the saved theme before first paint, so there is no light/dark flash. -->
+    <script src="js/theme-init.js"></script>
+    <!-- The Kotlin/JS application bundle. -->
+    <script src="js/quiz-arena.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Skip to content</a>
+    <header class="site-header" id="site-header">
+      <div class="site-header-inner">
+        <a class="brand" href="./" data-nav="setup">
+          <span class="brand-mark" aria-hidden="true">🧠</span>
+          <span>Quiz Arena</span>
+        </a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="#setup" data-nav="setup">Play</a>
+          <a href="#history" data-nav="history">History</a>
+          <a href="#leaderboard" data-nav="leaderboard">Leaderboard</a>
+          <button type="button" class="icon-button" data-theme-toggle aria-pressed="false" aria-label="Switch to dark theme">
+            <span data-theme-icon aria-hidden="true">🌙</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+    <main id="app" class="app" tabindex="-1">
+      <noscript>Quiz Arena needs JavaScript enabled.</noscript>
+    </main>
+    <footer class="site-footer">
+      <p>Quiz Arena · scores are saved on the quiz server; your player key stays in this browser.</p>
+    </footer>
+  </body>
+</html>
