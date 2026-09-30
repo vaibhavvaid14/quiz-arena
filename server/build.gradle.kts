@@ -47,3 +47,12 @@ tasks.named<JavaExec>("run") {
     dependsOn(":client:assembleWeb")
     environment("QUIZ_STATIC", rootProject.file("client/build/web").absolutePath)
 }
+
+/**
+ * The question bank stays in data/questions.json, where it is meant to be
+ * edited, and is copied into the jar at build time. Keeping a second copy
+ * under resources invited editing one and shipping the other.
+ */
+tasks.processResources {
+    from(rootProject.file("data/questions.json"))
+}
