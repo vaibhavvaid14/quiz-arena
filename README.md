@@ -12,18 +12,74 @@ feedback and explanations, and there are score analytics, per-player history and
 a shared leaderboard. 210 questions across 9 topics, from JavaScript and Python
 to world history and film.
 
-**Kotlin throughout**, in three Gradle modules:
+## Tech stack
+
+**One language: Kotlin.** It runs the server as JVM bytecode and the browser as
+compiled JavaScript, from a codebase that shares its model layer between them.
+
+| Layer | Technology | Version |
+|---|---|---|
+| Language | [Kotlin](https://kotlinlang.org) (Multiplatform: JVM + JS/IR) | 2.0.21 |
+| Server | [Ktor](https://ktor.io) on Netty | 3.0.3 |
+| Database | SQLite over JDBC ([xerial](https://github.com/xerial/sqlite-jdbc)) | 3.47.1 |
+| Serialisation | kotlinx.serialization (JSON) | 1.7.3 |
+| Async | kotlinx.coroutines | 1.9.0 |
+| Logging | Logback | 1.5.12 |
+| Runtime | JDK (Temurin) | 21 |
+| Build | Gradle (Kotlin DSL), via the wrapper | 8.10.2 |
+| Browser | Kotlin/JS → one webpack bundle. **No UI framework** | — |
+| Styling | Hand-written CSS (~2,100 lines), no preprocessor | — |
+| Deploy | Docker → [Render](https://render.com) | — |
+| CI | GitHub Actions | — |
+
+No React, no Spring, no ORM, no CSS framework. The DOM toolkit is about a
+hundred lines of Kotlin; the database layer is plain JDBC and hand-written SQL.
+
+**Three Gradle modules:**
 
 | | |
 |---|---|
 | `shared` | Models and scoring rules, compiled for **both** the JVM and the browser |
-| `server` | [Ktor](https://ktor.io) on Netty, SQLite over JDBC, server-side scoring |
-| `client` | Kotlin/JS, no framework — the DOM toolkit is about a hundred lines |
+| `server` | Ktor on Netty, SQLite over JDBC, server-side scoring |
+| `client` | Kotlin/JS — API client, DOM toolkit, timer, storage, five screens |
 
-The shared module is the reason this is one language rather than two. The API's
-request and response types are declared once and compiled into both the server
-and the browser, so renaming a field breaks the build on both sides at the same
-time. A server and a client that merely agree by convention cannot do that.
+`shared` is the reason this is one language rather than two. The API's request
+and response types are declared once and compiled into both the server and the
+browser, so renaming a field breaks the build on both sides at the same time. A
+server and a client that merely agree by convention cannot do that.
+
+## Layout
+
+```
+shared/src/commonMain/       Rules.kt          scoring, timing, grade bands
+                             Dto.kt            every API request and response
+
+server/src/main/kotlin/      Application.kt    entry point, env configuration
+                             Routing.kt        routes, CSP, errors, static files
+                             QuizService.kt    the quiz rules — the heart of it
+                             Seeder.kt         validates and syncs the question bank
+                             Database.kt       connections, transactions, migrations
+                             Errors.kt         domain errors → HTTP status codes
+server/src/main/resources/   schema.sql        the database schema
+server/src/test/             5 suites          65 tests
+
+client/src/jsMain/kotlin/    Api.kt            typed HTTP client
+                             App.kt            navigation, player flow, errors
+                             Dom.kt            typed element builder
+                             Timer.kt          drift-free countdown
+                             Storage.kt        device-local persistence
+                             Components.kt     rings, bars, pills, tiles
+                             Dialog.kt         suspending confirm dialog
+                             *Screen.kt        setup, quiz, results, history, leaderboard
+client/src/jsMain/resources/ index.html, css/styles.css, js/theme-init.js
+client/src/jsTest/           3 suites          22 tests
+
+tests/                       e2e.test.js       7 end-to-end tests (see "Test it")
+data/questions.json          210 questions across 9 topics
+Dockerfile, render.yaml      build and deploy
+```
+
+About 6,400 lines of Kotlin, plus the stylesheet.
 
 ## Run it
 
