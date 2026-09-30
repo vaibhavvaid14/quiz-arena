@@ -14,7 +14,6 @@ data/*.db-shm
 build/
 */build/
 .kotlin/
-kotlin-js-store/
 local.properties
 
 # Assembled web root (built by :client:assembleWeb)
