@@ -1,22 +1,13 @@
-# Kotlin port — state and how to resume
+# Kotlin port — what happened, and what to know
 
-Quiz Arena was rewritten from Python + vanilla JS to Kotlin, because the project
-may not use the original stack. The work lives on the `kotlin` branch. `main`
-still holds the Python app and is what the live Render service runs, so nothing
-here has touched the deployment.
+Quiz Arena was rewritten from Python + vanilla JavaScript to Kotlin, because the
+project could not use the original stack. **The rewrite is finished, merged into
+`main`, and deployed.** This file is kept as the record of how it was done and
+which decisions should not be quietly undone.
 
-**The rewrite is complete and verified. It has not been deployed or merged.**
+Live: <https://quiz-arena-kotlin.onrender.com/>
 
-## State
-
-| Stage | State |
-|---|---|
-| 1. Toolchain, Gradle, `shared` module | done |
-| 2. Ktor backend + tests | done |
-| 3. Kotlin/JS frontend + tests | done |
-| CI | green, including the Docker build |
-| 4. Deploy to Render | **not done — needs the repo owner** |
-| 5. Merge to `main`, retire the Python tree | **not done — blocked on the deploy** |
+## What the project is now
 
 ```
 shared/    Rules.kt, Dto.kt          compiled for BOTH the JVM and JS
@@ -25,22 +16,25 @@ client/    Api, Dom, Timer, Storage, Config, Components, Dialog, App,
            and the five screens (setup, quiz, results, history, leaderboard)
 ```
 
-The old JavaScript frontend is gone. The Python tree is still present but has no
-frontend on this branch, so `python serve.py` here would serve nothing — that is
-only true on `kotlin`, and it goes away at merge.
+`shared` is the reason this is one language rather than two: the API's request
+and response types are declared once and compiled into both ends, so renaming a
+field breaks the build on both sides at once.
 
-## Tests: 82, all green on a clean Linux CI runner
+The Python implementation and the JavaScript frontend are gone from the working
+tree; the history keeps them.
+
+## Tests: 94
 
 | Suite | Count | Command |
 |---|---|---|
-| Server | 60 | `./gradlew :server:test` |
-| Client | 15 | `./gradlew :client:jsTest` (headless Chrome) |
+| Server | 65 | `./gradlew :server:test` |
+| Client | 22 | `./gradlew :client:jsTest` (headless Chrome) |
 | End-to-end | 7 | see below |
 
 The end-to-end suite is the strongest evidence the port is faithful. It loads
 the real page in an iframe and clicks through it, importing nothing from the
 application. It was written against the *JavaScript* frontend and passes
-unchanged against the Kotlin one, so it cannot have been adjusted to fit.
+unchanged against the Kotlin one, so it cannot have been bent to fit.
 
 ```bash
 ./gradlew :server:buildFatJar :client:assembleTestWeb
@@ -49,69 +43,81 @@ chrome --headless=new --virtual-time-budget=180000 --dump-dom http://127.0.0.1:8
 # expect PASS 7/7
 ```
 
-## Resuming
+## Deployment
 
-```bash
-./gradlew :server:run      # builds the bundle and serves it on :8000
-./gradlew :server:test :client:jsTest
-```
+Render has no JVM runtime, so the service is a **Docker** web service built from
+the `Dockerfile`, which compiles the server jar and the Kotlin/JS bundle and
+ships both. `render.yaml` describes it.
 
-JDK 21 is required; Gradle comes from the wrapper.
+A service's runtime cannot be changed on Render, so the original Python service
+could not be converted — the Docker service was created alongside it. If the old
+`quiz-arena` service still exists it is dead weight: it auto-deploys `main`,
+which no longer contains a Python app, so its builds fail.
 
-### The one thing that must happen in the right order
+Free plan: the disk is wiped on every deploy and the service sleeps after about
+fifteen minutes idle, so the leaderboard and player history reset. Questions
+re-seed on every boot. `render.yaml` has the commented-out disk and `QUIZ_DB`
+settings that make scores permanent.
 
-The live Render service is a **Python** web service wired to `main`. Changing
-`render.yaml` does not retype an existing service, so **merging Kotlin into
-`main` before the deploy is re-pointed would break the live site**: Render would
-auto-deploy a repo with no Python app in it.
+## Things that were got wrong once, and should not be got wrong again
 
-So:
-
-1. **Re-point the deploy first.** In Render, either create a new Blueprint
-   service from the `kotlin` branch (safest — you see it working before anything
-   changes), or delete the existing service and re-apply the blueprint. Either
-   way it needs the account owner.
-2. **Then merge**, retiring the Python tree in the merge commit: `serve.py`,
-   `server/*.py`, `server/tests/`, `requirements.txt`, `start.bat`, and
-   `.github/workflows/tests.yml`.
-
-An attempt to delete the Python tree earlier was refused by the sandbox as
-irreversible local destruction, which is why it is still here. The owner has
-asked for it to go at merge.
-
-## Known gaps
-
-- **The Docker deploy has never actually run on Render.** CI proves the image
-  builds; nothing has proved it boots and serves there.
-- **No visual preview tool.** `tests/preview.html` and `preview.js` rendered one
-  screen at a time for visual checks by importing the JavaScript screens. They
-  were deleted rather than left broken; the Kotlin app has no equivalent.
-- **The bundle is ~356 KB** before compression, against a much smaller
-  hand-written JavaScript frontend. Kotlin/JS ships its stdlib, coroutines and
-  the serialization runtime. Expect questions about this.
-- **Cold starts will be worse than the Python version's.** The container has to
-  start and then the JVM has to boot, on top of the free plan's sleep.
-
-## Decisions worth not re-litigating
+A review of the port against the Python original found twelve behavioural
+differences, all since fixed and covered by tests. The ones worth remembering:
 
 - **`Rules.roundHalfUp` is deliberate.** Python's `round()` is banker's rounding
   and Kotlin's `Math.round(-2.5)` gives `-2`; scores want `2.5 -> 3` and
-  `-2.5 -> -3`. Do not "simplify" it to a stdlib call.
-- **One SQLite connection behind a lock.** SQLite has one writer anyway and
-  `BEGIN IMMEDIATE` is easier to reason about this way. Ktor serves on many
-  threads, so the lock is required; nested transactions join the outer one
+  `-2.5 -> -3`. Do not "simplify" it to a stdlib call. The same trap was walked
+  into a second time in `formatDuration`, where `round()` made 500 ms render as
+  `"0s"`.
+- **Names are not ASCII.** `\s+` in Kotlin matches ASCII whitespace only, so an
+  ideographic space slipped through as a valid name; and rejecting Unicode
+  category `Cs` rejected every emoji, because on the JVM a non-BMP character *is*
+  a surrogate pair. The length cap counts code points, not UTF-16 units.
+- **Hold the lock across recovery.** `QuizScreen.act` released its `busy` flag
+  before the 409 stale-tab reload, so a keypress could fire a second answer for a
+  position the server had already passed.
+- **`dialog.open` is `undefined` where `<dialog>` is unsupported**, so casting it
+  to `Boolean` threw and stranded the coroutine — defeating the fallback three
+  lines below it.
+- **Names must match across canonical equivalence.** The JavaScript compared with
+  `localeCompare` at accent sensitivity; a plain case-insensitive compare means a
+  decomposed spelling misses the stored composed player, and the owner gets a 409
+  for their own name.
+
+## Other decisions worth not re-litigating
+
+- **One SQLite connection behind a lock.** SQLite has a single writer anyway and
+  `BEGIN IMMEDIATE` is easier to reason about this way. The lock is required
+  because Ktor serves on many threads; nested transactions join the outer one
   rather than issuing a second `BEGIN`, which SQLite rejects.
-- **The seeder validates raw JSON, not data classes.** Parsing into typed
-  objects first would abort on the first bad question instead of reporting all
-  of them at once.
+- **The seeder validates raw JSON, not data classes.** Parsing into typed objects
+  first would abort on the first bad question instead of reporting all of them.
 - **The static traversal check decides on the resolved path**, so
   `js/../server/QuizService.kt` cannot pass by starting with an allowed prefix.
+  There is deliberately no `/api/` catch-all route: one would turn a
+  wrong-method request into 404 where Ktor otherwise answers 405.
 - **`Api` passes serializers explicitly** rather than using reified inline
   functions: a public inline function may not touch private state, and both the
   player key and the `Json` instance need to stay private.
 - **Client test names are camelCase.** Kotlin/JS rejects backticked identifiers
   with spaces, unlike the JVM.
-- **`validateDistributionUrl=false`** in the root build only skips Gradle's
-  reachability probe for its own distribution; the committed wrapper still
-  points at the real URL. `gradlew` is committed with its execute bit set —
-  without it, CI fails with exit code 126.
+- **`gradlew` is committed with its execute bit set.** Git on Windows does not
+  record it, and without it CI fails with exit code 126.
+- **`validateDistributionUrl=false`** only skips Gradle's reachability probe for
+  its own distribution; the committed wrapper still points at the real URL.
+- **The question bank lives only in `data/questions.json`** and is copied into
+  the jar by `processResources`. A second copy under resources invited editing
+  one and shipping the other.
+
+## Known limits
+
+- **The bundle is ~356 KB** before compression, against a much smaller
+  hand-written JavaScript frontend. Kotlin/JS ships its stdlib, coroutines and
+  the serialization runtime. That is the price of one language and a
+  compile-time-checked contract.
+- **No visual preview tool.** `tests/preview.html` rendered one screen at a time
+  for visual checks by importing the JavaScript screens. It was deleted rather
+  than left broken, and has no Kotlin equivalent yet.
+- **Cold starts are fine, contrary to expectation.** This was predicted to be
+  much worse than Python's; measured, the application starts in about 0.7 s and
+  a cold request takes roughly 1.1 s end to end.

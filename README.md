@@ -2,8 +2,8 @@
 
 [![kotlin](https://github.com/vaibhavvaid14/quiz-arena/actions/workflows/kotlin.yml/badge.svg)](https://github.com/vaibhavvaid14/quiz-arena/actions/workflows/kotlin.yml)
 
-**[Play it live](https://quiz-arena-uyz6.onrender.com/)** — hosted free, so the
-first request after a quiet spell takes a while to wake up.
+**[Play it live](https://quiz-arena-kotlin.onrender.com/)** — hosted free, so the service
+sleeps when idle and the first request has to wake it.
 
 ![The Quiz Arena setup screen, showing the nine topics](docs/screenshot.png)
 
@@ -87,10 +87,11 @@ Render dashboard choose **New > Blueprint**, pick this repo and apply; it reads
 compiles the server jar and the Kotlin/JS bundle and ships both.
 
 On the free plan the disk is wiped on every deploy and the service sleeps after
-about fifteen minutes idle, so scores do not survive a restart, and the first
-request after a nap has to start the container *and* boot the JVM. Questions
-re-seed on every boot, so the quiz itself always works. `render.yaml` shows the
-disk and `QUIZ_DB` settings that make scores permanent.
+about fifteen minutes idle, so scores do not survive a restart. Waking it is
+quicker than it sounds: the application starts in well under a second, and a
+cold request measured about 1.1 s end to end. Questions re-seed on every boot,
+so the quiz itself always works. `render.yaml` shows the disk and `QUIZ_DB`
+settings that make scores permanent.
 
 ## How it works
 
