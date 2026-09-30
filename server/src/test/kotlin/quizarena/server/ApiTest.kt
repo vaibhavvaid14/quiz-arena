@@ -135,7 +135,36 @@ class ApiTest {
     @Test
     fun `unknown api paths are not treated as static files`() = testApplication {
         setup()
-        assertEquals(HttpStatusCode.NotFound, client.get("/api/nope").status)
+        val response = client.get("/api/nope")
+        assertEquals(HttpStatusCode.NotFound, response.status)
+        // A missing endpoint, not a missing file.
+        assertEquals("Unknown endpoint.", response.json()["error"]!!.jsonObject["message"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `a known path with the wrong method is a 405, not a 404`() = testApplication {
+        setup()
+        assertEquals(HttpStatusCode.MethodNotAllowed, client.post("/api/catalog").status)
+    }
+
+    @Test
+    fun `a non-numeric limit is refused rather than silently defaulted`() = testApplication {
+        setup()
+        val response = client.get("/api/leaderboard?limit=abc")
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertEquals("invalid_input", response.json()["error"]!!.jsonObject["code"]!!.jsonPrimitive.content)
+        // An absent limit still takes the default.
+        assertEquals(HttpStatusCode.OK, client.get("/api/leaderboard").status)
+    }
+
+    @Test
+    fun `an oversized body is refused on its declared length`() = testApplication {
+        setup()
+        val response = client.post("/api/players") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"name":"${"x".repeat(70_000)}"}""")
+        }
+        assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
     }
 
     // ---------------------------------------------------------------- static

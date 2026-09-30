@@ -49,7 +49,9 @@ suspend fun confirmDialog(
         if (settled) return
         settled = true
         val d = dialog.asDynamic()
-        if (d.open as Boolean) d.close()
+        // `open` is undefined where <dialog> is unsupported; casting it to
+        // Boolean would throw and strand this coroutine.
+        if (d.open == true) d.close()
         dialog.remove()
         if (continuation.isActive) continuation.resume(result)
     }

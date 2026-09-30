@@ -29,6 +29,26 @@ class PlayerTest {
     }
 
     @Test
+    fun `names may contain characters outside the basic plane`() {
+        // On the JVM an emoji is a surrogate pair, which must not be mistaken for
+        // the lone surrogates the control-character check is meant to reject.
+        assertEquals("Ada 🎉", f.service.createPlayer(CreatePlayerRequest("Ada 🎉")).name)
+        // And it costs one character against the limit, not two.
+        val thirty = "🎉".repeat(30)
+        assertEquals(thirty, f.service.createPlayer(CreatePlayerRequest(thirty)).name)
+        assertFailsWith<ValidationException> { f.service.createPlayer(CreatePlayerRequest("🎉".repeat(31))) }
+    }
+
+    @Test
+    fun `every kind of unicode space is collapsed`() {
+        // U+3000 ideographic space, U+00A0 no-break space.
+        assertEquals("Ada Lovelace", f.service.createPlayer(CreatePlayerRequest("Ada　Lovelace")).name)
+        assertEquals("Grace Hopper", f.service.createPlayer(CreatePlayerRequest("Grace  Hopper")).name)
+        // A name made only of spaces is empty once collapsed.
+        assertFailsWith<ValidationException> { f.service.createPlayer(CreatePlayerRequest("　")) }
+    }
+
+    @Test
     fun `bad keys are rejected`() {
         for (key in listOf("", "nope")) {
             assertFailsWith<UnauthorizedException> { f.service.authenticate(key) }

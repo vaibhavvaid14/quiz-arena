@@ -158,7 +158,15 @@ class Storage(
     private fun readPlayers(): StoredPlayers =
         read("players", StoredPlayers(), StoredPlayers.serializer())
 
-    private fun sameName(a: String, b: String) = a.equals(b, ignoreCase = true)
+    /**
+     * Names are compared the way the previous implementation compared them, with
+     * localeCompare at accent sensitivity: canonically equivalent spellings must
+     * match, or someone who types their name decomposed misses the player this
+     * device already stored and gets a 409 for a name they own.
+     */
+    private fun canonical(value: String): String = value.asDynamic().normalize("NFC") as String
+
+    private fun sameName(a: String, b: String) = canonical(a).equals(canonical(b), ignoreCase = true)
 
     /** The player currently playing on this device, or null. */
     fun getCurrentPlayer(): StoredPlayer? {
@@ -196,7 +204,7 @@ class Storage(
     // --------------------------------------------------------- active attempt
 
     fun getActiveAttemptId(): String? =
-        read("activeAttempt", null, String.serializer().nullable)
+        read("activeAttempt", null, String.serializer().nullable)?.takeIf { it.isNotEmpty() }
 
     fun setActiveAttemptId(id: String): Boolean =
         write("activeAttempt", id, String.serializer())

@@ -2,6 +2,7 @@ package quizarena.client
 
 import kotlinx.browser.document
 import kotlinx.browser.window
+import kotlinx.coroutines.launch
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.events.Event
@@ -359,35 +360,34 @@ fun renderQuizScreen(root: HTMLElement, ctx: AppContext, params: ScreenParams): 
     fun act(call: suspend () -> AttemptState, onFailure: (() -> Unit)? = null) {
         if (busy || !mounted) return
         busy = true
-        ctx.scope.launchCatching(
-            block = {
-                try {
-                    val nextState = call()
-                    if (mounted) {
-                        state = nextState
-                        render()
-                    }
-                } finally {
-                    busy = false
+        // One coroutine for the whole round-trip, recovery included: releasing the
+        // lock before the 409 reload would let a keypress fire a second answer for
+        // a position the server has already moved past.
+        ctx.scope.launch {
+            try {
+                val nextState = call()
+                if (mounted) {
+                    state = nextState
+                    render()
                 }
-            },
-            onError = { error ->
-                busy = false
-                if (!mounted) return@launchCatching
-                if (error is ApiError && error.status == 409) {
-                    ctx.scope.launchCatching(
-                        block = {
+            } catch (error: Throwable) {
+                if (mounted) {
+                    if (error is ApiError && error.status == 409) {
+                        try {
                             state = ctx.api.attempt(state.id)
                             render()
-                        },
-                        onError = { reloadError -> ctx.handleError(reloadError) },
-                    )
-                } else {
-                    ctx.handleError(error)
-                    onFailure?.invoke()
+                        } catch (reloadError: Throwable) {
+                            ctx.handleError(reloadError)
+                        }
+                    } else {
+                        ctx.handleError(error)
+                        onFailure?.invoke()
+                    }
                 }
-            },
-        )
+            } finally {
+                busy = false
+            }
+        }
     }
 
     select = { optionId ->

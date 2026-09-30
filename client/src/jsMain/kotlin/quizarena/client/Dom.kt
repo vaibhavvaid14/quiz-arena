@@ -99,7 +99,9 @@ fun formatClock(ms: Long): String = formatClock(ms.toDouble())
 
 /** Human-friendly duration: "45s", "3m 12s", "1h 4m". */
 fun formatDuration(ms: Long): String {
-    val totalSeconds = round(maxOf(0L, ms).toDouble() / 1000).toInt()
+    // floor(x + 0.5), not round(): Kotlin rounds a tie to even, so 500 ms would
+    // become "0s" and 2500 ms "2s". Everything else here rounds ties up.
+    val totalSeconds = floor(maxOf(0L, ms).toDouble() / 1000 + 0.5).toInt()
     if (totalSeconds < 60) return "${totalSeconds}s"
     val minutes = totalSeconds / 60
     if (minutes < 60) return "${minutes}m ${totalSeconds % 60}s"

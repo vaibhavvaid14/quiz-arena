@@ -50,6 +50,23 @@ class StorageTest {
     }
 
     @Test
+    fun namesMatchAcrossCanonicallyEquivalentSpellings() {
+        val (_, store) = storage()
+        // "André" composed (NFC) versus the same name decomposed (NFD).
+        store.rememberPlayer(StoredPlayer("André", "key-1"))
+
+        assertEquals("key-1", store.findKnownPlayer("André")?.key)
+        assertEquals("André", store.getCurrentPlayer()?.name)
+    }
+
+    @Test
+    fun anEmptyStoredAttemptIdReadsAsAbsent() {
+        val (_, store) = storage()
+        store.setActiveAttemptId("")
+        assertNull(store.getActiveAttemptId())
+    }
+
+    @Test
     fun forgettingAPlayerClearsThemAndTheCurrentPointer() {
         val (_, store) = storage()
         store.rememberPlayer(StoredPlayer("Ada", "key-1"))

@@ -643,7 +643,9 @@ class QuizService(
             grade = Rules.gradeFor(percentage),
             bestStreak = bestStreak(items),
             durationMs = duration,
-            averageTimeMs = if (total > 0) Math.round(duration.toDouble() / total) else 0,
+            // Rules.roundHalfUp, not Math.round: the project rounds ties away from
+            // zero everywhere, and Math.round would disagree on a negative tie.
+            averageTimeMs = if (total > 0) Rules.roundHalfUp(duration.toDouble() / total).toLong() else 0,
             byTopic = byTopic.entries
                 .sortedBy { topics[it.key]?.third ?: 0 }
                 .map { (key, b) ->
@@ -704,12 +706,21 @@ class QuizService(
     }
 
     private fun cleanName(raw: String): String {
-        val name = Normalizer.normalize(raw, Normalizer.Form.NFC).split(Regex("\\s+")).filter { it.isNotEmpty() }.joinToString(" ")
-        if (name.isEmpty() || name.length > Rules.PLAYER_NAME_MAX) {
+        // \s+ in Kotlin is ASCII-only; Python's str.split() collapsed every kind of
+        // Unicode space, so an ideographic space would otherwise survive as a name.
+        val name = Normalizer.normalize(raw, Normalizer.Form.NFC)
+            .split(WHITESPACE)
+            .filter { it.isNotEmpty() }
+            .joinToString(" ")
+        // Counted in code points, not UTF-16 units, so an emoji costs one character
+        // rather than two.
+        if (name.isEmpty() || name.codePointCount(0, name.length) > Rules.PLAYER_NAME_MAX) {
             throw ValidationException("Name must be 1-${Rules.PLAYER_NAME_MAX} characters.")
         }
-        // Rejects Unicode category C* (control, format, surrogate, private use, unassigned).
-        if (name.any { Character.getType(it) in CONTROL_TYPES }) {
+        // Rejects Unicode category C* (control, format, private use, unassigned).
+        // Surrogates are deliberately not rejected: on the JVM a non-BMP character
+        // such as an emoji *is* a surrogate pair, and Python accepted those names.
+        if (name.codePoints().anyMatch { Character.getType(it) in CONTROL_TYPES }) {
             throw ValidationException("Name contains invalid characters.")
         }
         return name
@@ -776,8 +787,17 @@ class QuizService(
         val RESOLVED = setOf("correct", "wrong", "timeout", "skipped")
         val ANSWERED = setOf("correct", "wrong", "timeout")
         val SECURE_RANDOM = SecureRandom()
+
+        /** Every kind of Unicode space, not just ASCII, so names collapse as before. */
+        val WHITESPACE = Regex("[\\s\\p{Z}]+")
+
+        /**
+         * Unicode category C*, minus surrogates. A lone surrogate cannot reach here
+         * from valid UTF-8 input, and testing code points rather than chars means a
+         * legitimate emoji is never mistaken for one.
+         */
         val CONTROL_TYPES = setOf(
-            Character.CONTROL.toInt(), Character.FORMAT.toInt(), Character.SURROGATE.toInt(),
+            Character.CONTROL.toInt(), Character.FORMAT.toInt(),
             Character.PRIVATE_USE.toInt(), Character.UNASSIGNED.toInt(),
         )
     }

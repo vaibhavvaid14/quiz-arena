@@ -102,7 +102,11 @@ fun Application.module(db: Db, testMode: Boolean = Config.testMode, staticRoot: 
         }
         get("/api/leaderboard") {
             call.noStore()
-            val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 20
+            val raw = call.request.queryParameters["limit"]
+            // Silently defaulting would hide a client bug behind plausible data.
+            val limit = raw?.toIntOrNull()
+                ?: raw?.let { throw ValidationException("'limit' must be an integer.") }
+                ?: 20
             // A valid key also returns your own rank; an absent one is fine here.
             val player = runCatching { service.authenticate(call.playerKey()) }.getOrNull()
             call.respond(service.leaderboard(limit, player))
@@ -158,12 +162,10 @@ fun Application.module(db: Db, testMode: Boolean = Config.testMode, staticRoot: 
             call.respond(service.results(player, call.attemptId()))
         }
 
-        // Anything else under /api/ is a genuine 404, never a static lookup.
-        route("/api/{...}") {
-            handle { throw NotFoundException("Unknown endpoint.") }
-        }
-
         // ------------------------------------------------------------ static
+        // No catch-all for /api/: one would swallow a known path requested with the
+        // wrong method, which Ktor otherwise answers with 405 rather than 404.
+        // serveStatic keeps /api/ paths from being treated as file lookups.
         get("/{path...}") {
             call.serveStatic(staticRoot, testMode)
         }
@@ -186,6 +188,14 @@ private fun ApplicationCall.attemptId(): String {
 }
 
 private suspend inline fun <reified T> ApplicationCall.body(json: Json): T {
+    // Refuse on the declared length before reading, so an oversized body is never
+    // buffered. The check is repeated after reading because Content-Length may be
+    // absent (chunked) or simply untrue.
+    request.headers[HttpHeaders.ContentLength]?.toLongOrNull()?.let { declared ->
+        if (declared > MAX_BODY_BYTES) {
+            throw ApiException("Request body is too large.", status = 413, code = "too_large")
+        }
+    }
     val text = receiveText()
     if (text.toByteArray(Charsets.UTF_8).size > MAX_BODY_BYTES) {
         throw ApiException("Request body is too large.", status = 413, code = "too_large")
@@ -204,6 +214,8 @@ private suspend inline fun <reified T> ApplicationCall.body(json: Json): T {
  */
 private suspend fun ApplicationCall.serveStatic(root: Path, testMode: Boolean) {
     val raw = request.uri.substringBefore('?').removePrefix("/")
+    // An unmatched /api/ path is a missing endpoint, not a missing file.
+    if (raw == "api" || raw.startsWith("api/")) throw NotFoundException("Unknown endpoint.")
     val requested = when {
         raw.isEmpty() -> "index.html"
         raw.endsWith("/") -> raw + "index.html"

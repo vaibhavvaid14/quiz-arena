@@ -1,9 +1,9 @@
 name: tests
 
+# Superseded by kotlin.yml. Kept only so the Python implementation on `main`
+# stays runnable until it is retired at merge; it is manual-only because the
+# `kotlin` branch has no Python frontend for it to test.
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 
 jobs:
